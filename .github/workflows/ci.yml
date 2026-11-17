@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore ElectroFix.sln
+
+      - name: Build
+        run: dotnet build ElectroFix.sln --no-restore -warnaserror
+
+      - name: Format
+        run: dotnet format ElectroFix.sln --verify-no-changes --no-restore
+
+      - name: Test
+        run: dotnet test ElectroFix.sln --no-build
