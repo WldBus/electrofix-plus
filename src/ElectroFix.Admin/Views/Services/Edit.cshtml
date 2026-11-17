@@ -1,0 +1,46 @@
+@model ServiceSaveRequest
+@{
+    var id = (int)ViewBag.Id;
+    ViewData["Title"] = id == 0 ? "Новая работа" : "Изменение работы";
+}
+<div class="card p-4" style="max-width: 680px">
+    <form asp-action="Save" asp-route-id="@id" method="post">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2"></div>
+        <div class="mb-3">
+            <label asp-for="Name" class="form-label">Наименование</label>
+            <input asp-for="Name" class="form-control" />
+            <span asp-validation-for="Name" class="text-danger small"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="Category" class="form-label">Категория</label>
+            <input asp-for="Category" class="form-control" />
+            <span asp-validation-for="Category" class="text-danger small"></span>
+        </div>
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label asp-for="NormHours" class="form-label">Норма времени, ч</label>
+                <input asp-for="NormHours" class="form-control" step="0.01" readonly="@(id != 0)" />
+                <span asp-validation-for="NormHours" class="text-danger small"></span>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label asp-for="Rate" class="form-label">Ставка за час, ₽</label>
+                <input asp-for="Rate" class="form-control" step="0.01" readonly="@(id != 0)" />
+                <span asp-validation-for="Rate" class="text-danger small"></span>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label asp-for="WarrantyMonths" class="form-label">Гарантия, мес.</label>
+                <input asp-for="WarrantyMonths" class="form-control" />
+                <span asp-validation-for="WarrantyMonths" class="text-danger small"></span>
+            </div>
+        </div>
+        @if (id != 0)
+        {
+            <p class="small text-muted">Норму и ставку у существующей работы не меняю: по ним посчитаны старые сметы. Для новой цены заведите новую работу.</p>
+        }
+        <button class="btn btn-primary">Сохранить</button>
+        <a asp-action="Index" class="btn btn-link">Отмена</a>
+    </form>
+</div>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

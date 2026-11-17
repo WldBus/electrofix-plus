@@ -1,0 +1,22 @@
+@model bool
+@* форма массового удаления; галочки в строках привязаны к ней атрибутом form="bulk" *@
+@{
+    var returnUrl = Context.Request.Path + Context.Request.QueryString;
+}
+<form id="bulk" asp-action="DeleteMany" method="post" class="d-inline">
+    <input type="hidden" name="hard" value="@(Model ? "true" : "false")" />
+    <input type="hidden" name="returnUrl" value="@returnUrl" />
+    @if (Model)
+    {
+        <button class="btn btn-sm btn-outline-danger" data-bulk-button disabled
+                data-confirm="Удалить выбранные записи навсегда? Вернуть их будет нельзя.">
+            <i class="bi bi-x-octagon"></i> Удалить навсегда (<span data-bulk-count>0</span>)
+        </button>
+    }
+    else
+    {
+        <button class="btn btn-sm btn-outline-danger" data-bulk-button disabled data-confirm="Переместить выбранные записи в корзину?">
+            <i class="bi bi-trash"></i> В корзину (<span data-bulk-count>0</span>)
+        </button>
+    }
+</form>

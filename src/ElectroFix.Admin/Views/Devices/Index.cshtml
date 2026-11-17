@@ -1,0 +1,53 @@
+@model PagedResult<DeviceDto>
+@{
+    ViewData["Title"] = "Устройства";
+    ViewData["ReadOnly"] = true;
+    var q = (ListQuery)ViewBag.Query;
+    var clientId = Context.Request.Query["clientId"].ToString();
+}
+<form method="get" class="d-flex flex-wrap gap-2 mb-3">
+    @if (clientId != "")
+    {
+        <input type="hidden" name="clientId" value="@clientId" />
+    }
+    <input name="search" value="@q.Search" class="form-control" placeholder="Марка, модель или серийный номер" style="width: 300px" />
+    <button class="btn btn-outline-secondary"><i class="bi bi-search"></i></button>
+    @if (clientId != "")
+    {
+        <a asp-action="Index" class="btn btn-link">Показать всех клиентов</a>
+    }
+</form>
+<div class="card">
+    <div class="table-responsive">
+    <table class="table table-hover mb-0">
+        <thead>
+        <tr>
+            <th>@Html.SortHeader("type", "Тип")</th>
+            <th>@Html.SortHeader("brand", "Марка и модель")</th>
+            <th>Серийный номер</th>
+            <th>Год</th>
+            <th>@Html.SortHeader("client", "Владелец")</th>
+            <th class="text-end">Наработка, ч</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var d in Model.Items)
+        {
+            <tr>
+                <td>@d.Type</td>
+                <td>@d.Brand @d.Model</td>
+                <td class="font-monospace">@d.SerialNumber</td>
+                <td>@d.ManufactureYear</td>
+                <td>@d.ClientName</td>
+                <td class="text-end">@d.RuntimeHours</td>
+            </tr>
+        }
+        @if (Model.Items.Count == 0)
+        {
+            <tr><td colspan="6" class="text-center text-muted py-3">Устройства не найдены</td></tr>
+        }
+        </tbody>
+    </table>
+    </div>
+    <partial name="_Pager" model="new PagerModel(Model.Page, Model.Size, Model.Total)" />
+</div>

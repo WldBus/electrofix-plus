@@ -1,0 +1,55 @@
+@model PagedResult<InvoiceDto>
+@{
+    ViewData["Title"] = "Счета";
+    ViewData["ReadOnly"] = true;
+    var q = (StatusListQuery)ViewBag.Query;
+}
+<form method="get" class="d-flex flex-wrap gap-2 mb-3">
+    <input name="search" value="@q.Search" class="form-control" placeholder="Номер счёта, заказ-наряда или клиент" style="width: 300px" />
+    <select name="status" class="form-select w-auto" onchange="this.form.submit()">
+        <option value="">Все статусы</option>
+        @foreach (var (code, label) in Labels.InvoiceStatuses)
+        {
+            <option value="@code" selected="@(q.Status == code)">@label</option>
+        }
+    </select>
+    <button class="btn btn-outline-secondary"><i class="bi bi-search"></i></button>
+</form>
+<div class="card">
+    <div class="table-responsive">
+    <table class="table table-hover mb-0">
+        <thead>
+        <tr>
+            <th>@Html.SortHeader("number", "Номер")</th>
+            <th>Заказ-наряд</th>
+            <th>Клиент</th>
+            <th class="text-end">@Html.SortHeader("amount", "Сумма")</th>
+            <th class="text-end">Оплачено</th>
+            <th class="text-end">@Html.SortHeader("debt", "Долг")</th>
+            <th>Статус</th>
+            <th>@Html.SortHeader("issued", "Выставлен")</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var i in Model.Items)
+        {
+            <tr>
+                <td>@i.InvoiceNumber</td>
+                <td>@i.WorkOrderNumber</td>
+                <td>@i.Client</td>
+                <td class="text-end">@HtmlHelpers.Money(i.Amount)</td>
+                <td class="text-end">@HtmlHelpers.Money(i.Paid)</td>
+                <td class="text-end @(i.Debt > 0 ? "text-danger" : "")">@HtmlHelpers.Money(i.Debt)</td>
+                <td><partial name="_StatusBadge" model="i.Status" /></td>
+                <td>@HtmlHelpers.Day(i.IssuedAt)</td>
+            </tr>
+        }
+        @if (Model.Items.Count == 0)
+        {
+            <tr><td colspan="8" class="text-center text-muted py-3">Счетов нет</td></tr>
+        }
+        </tbody>
+    </table>
+    </div>
+    <partial name="_Pager" model="new PagerModel(Model.Page, Model.Size, Model.Total)" />
+</div>

@@ -1,0 +1,138 @@
+@model WorkOrderDetailsDto
+@{
+    var h = Model.Header;
+    var c = Model.Checkin;
+    ViewData["Title"] = "Заказ-наряд " + h.WorkOrderNumber;
+    ViewData["ReadOnly"] = true;
+}
+<div class="mb-3"><a asp-action="Index"><i class="bi bi-arrow-left"></i> Все заказ-наряды</a></div>
+<div class="row g-3 mb-3">
+    <div class="col-lg-6">
+        <div class="card p-3 h-100">
+            <h2 class="h6">Заказ-наряд</h2>
+            <dl class="row mb-0 small">
+                <dt class="col-5">Статус</dt><dd class="col-7"><partial name="_StatusBadge" model="h.Status" /></dd>
+                <dt class="col-5">Клиент</dt><dd class="col-7">@h.Client</dd>
+                <dt class="col-5">Устройство</dt><dd class="col-7">@h.Device <span class="text-muted">(@h.SerialNumber)</span></dd>
+                <dt class="col-5">Филиал</dt><dd class="col-7">@h.Branch</dd>
+                <dt class="col-5">Приёмщик</dt><dd class="col-7">@h.Receptionist</dd>
+                <dt class="col-5">Мастер</dt><dd class="col-7">@(h.Master ?? "не назначен")</dd>
+                <dt class="col-5">Открыт / закрыт</dt><dd class="col-7">@HtmlHelpers.Time(h.OpenedAt) / @HtmlHelpers.Time(h.ClosedAt)</dd>
+                <dt class="col-5">Сумма</dt><dd class="col-7 fw-semibold">@HtmlHelpers.Money(h.TotalAmount)</dd>
+            </dl>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card p-3 h-100">
+            <h2 class="h6">Приёмка</h2>
+            <dl class="row mb-0 small">
+                <dt class="col-5">Запись на</dt><dd class="col-7">@HtmlHelpers.Time(c.SlotStart)</dd>
+                <dt class="col-5">Приоритет</dt><dd class="col-7">@Labels.Of(Labels.Priorities, c.Priority)</dd>
+                <dt class="col-5">Что просили</dt><dd class="col-7">@c.ServicesRequested</dd>
+                <dt class="col-5">Неисправность</dt><dd class="col-7">@c.Defects</dd>
+                <dt class="col-5">Состояние</dt><dd class="col-7">@c.ConditionState</dd>
+            </dl>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <h2 class="h6 p-3 mb-0">Работы</h2>
+    <div class="table-responsive">
+    <table class="table table-sm mb-0">
+        <thead><tr><th>Работа</th><th class="text-end">Норма, ч</th><th class="text-end">Факт, ч</th><th class="text-end">Ставка</th><th class="text-end">Скидка/наценка</th><th>Версия сметы</th><th>Согласование</th></tr></thead>
+        <tbody>
+        @foreach (var s in Model.Services)
+        {
+            <tr>
+                <td>@s.ServiceName @if (s.IsEmergency) { <span class="badge bg-danger">срочно</span> }</td>
+                <td class="text-end">@HtmlHelpers.Num(s.NormHours)</td>
+                <td class="text-end">@HtmlHelpers.Num(s.ActualTime)</td>
+                <td class="text-end">@HtmlHelpers.Money(s.Rate)</td>
+                <td class="text-end">@HtmlHelpers.Num(s.DiscountMarkup)%</td>
+                <td>@s.EstimateVersion</td>
+                <td>@Labels.Of(Labels.ApprovalStatuses, s.ApprovalStatus)</td>
+            </tr>
+        }
+        @if (Model.Services.Count == 0)
+        {
+            <tr><td colspan="7" class="text-center text-muted">Работ нет</td></tr>
+        }
+        </tbody>
+    </table>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <h2 class="h6 p-3 mb-0">Запчасти</h2>
+    <div class="table-responsive">
+    <table class="table table-sm mb-0">
+        <thead><tr><th>Артикул</th><th>Запчасть</th><th class="text-end">Кол-во</th><th class="text-end">Цена</th><th>Партия</th><th>Согласование</th></tr></thead>
+        <tbody>
+        @foreach (var p in Model.Parts)
+        {
+            <tr>
+                <td class="font-monospace">@p.Article</td>
+                <td>@p.PartName</td>
+                <td class="text-end">@HtmlHelpers.Num(p.Quantity)</td>
+                <td class="text-end">@HtmlHelpers.Money(p.Price)</td>
+                <td>@p.Batch</td>
+                <td>@Labels.Of(Labels.ApprovalStatuses, p.ApprovalStatus)</td>
+            </tr>
+        }
+        @if (Model.Parts.Count == 0)
+        {
+            <tr><td colspan="6" class="text-center text-muted">Запчастей нет</td></tr>
+        }
+        </tbody>
+    </table>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <h2 class="h6 p-3 mb-0">Счета</h2>
+            <table class="table table-sm mb-0">
+                <thead><tr><th>Номер</th><th class="text-end">Сумма</th><th class="text-end">Долг</th><th>Статус</th></tr></thead>
+                <tbody>
+                @foreach (var i in Model.Invoices)
+                {
+                    <tr>
+                        <td>@i.InvoiceNumber</td>
+                        <td class="text-end">@HtmlHelpers.Money(i.Amount)</td>
+                        <td class="text-end">@HtmlHelpers.Money(i.Debt)</td>
+                        <td><partial name="_StatusBadge" model="i.Status" /></td>
+                    </tr>
+                }
+                @if (Model.Invoices.Count == 0)
+                {
+                    <tr><td colspan="4" class="text-center text-muted">Счёт ещё не выставлен</td></tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <h2 class="h6 p-3 mb-0">Гарантийные случаи</h2>
+            <table class="table table-sm mb-0">
+                <thead><tr><th>Причина</th><th>Решение</th><th class="text-end">Компенсация</th></tr></thead>
+                <tbody>
+                @foreach (var w in Model.WarrantyCases)
+                {
+                    <tr>
+                        <td>@w.Reason</td>
+                        <td>@Labels.Of(Labels.WarrantyDecisions, w.Decision)</td>
+                        <td class="text-end">@HtmlHelpers.Money(w.SettlementAmount)</td>
+                    </tr>
+                }
+                @if (Model.WarrantyCases.Count == 0)
+                {
+                    <tr><td colspan="3" class="text-center text-muted">Нет</td></tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

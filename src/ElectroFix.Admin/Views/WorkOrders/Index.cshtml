@@ -1,0 +1,60 @@
+@model PagedResult<WorkOrderDto>
+@{
+    ViewData["Title"] = "Заказ-наряды";
+    ViewData["ReadOnly"] = true;
+    var q = (WorkOrderListQuery)ViewBag.Query;
+}
+<form method="get" class="d-flex flex-wrap gap-2 mb-3">
+    <input name="search" value="@q.Search" class="form-control" placeholder="Номер, клиент или устройство" style="width: 280px" />
+    <select name="status" class="form-select w-auto" onchange="this.form.submit()">
+        <option value="">Все статусы</option>
+        @foreach (var (code, label) in Labels.WorkOrderStatuses)
+        {
+            <option value="@code" selected="@(q.Status == code)">@label</option>
+        }
+    </select>
+    <button class="btn btn-outline-secondary"><i class="bi bi-search"></i></button>
+</form>
+<div class="card">
+    <div class="table-responsive">
+    <table class="table table-hover mb-0">
+        <thead>
+        <tr>
+            <th>@Html.SortHeader("number", "Номер")</th>
+            <th>Клиент</th>
+            <th>Устройство</th>
+            <th>Мастер</th>
+            <th>@Html.SortHeader("status", "Статус")</th>
+            <th class="text-end">@Html.SortHeader("total", "Сумма")</th>
+            <th>Счёт</th>
+            <th>@Html.SortHeader("opened", "Открыт")</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var w in Model.Items)
+        {
+            <tr>
+                <td><a asp-action="Details" asp-route-id="@w.WorkOrderId">@w.WorkOrderNumber</a></td>
+                <td>@w.Client</td>
+                <td>@w.Device</td>
+                <td>@(w.Master ?? "—")</td>
+                <td><partial name="_StatusBadge" model="w.Status" /></td>
+                <td class="text-end">@HtmlHelpers.Money(w.TotalAmount)</td>
+                <td>
+                    @if (w.InvoiceStatus != null)
+                    {
+                        <partial name="_StatusBadge" model="w.InvoiceStatus" />
+                    }
+                </td>
+                <td>@HtmlHelpers.Day(w.OpenedAt)</td>
+            </tr>
+        }
+        @if (Model.Items.Count == 0)
+        {
+            <tr><td colspan="8" class="text-center text-muted py-3">Заказ-нарядов нет</td></tr>
+        }
+        </tbody>
+    </table>
+    </div>
+    <partial name="_Pager" model="new PagerModel(Model.Page, Model.Size, Model.Total)" />
+</div>

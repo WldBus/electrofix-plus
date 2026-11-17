@@ -1,0 +1,55 @@
+@model PagedResult<PartDto>
+@{
+    ViewData["Title"] = "Запчасти";
+    var q = (CatalogListQuery)ViewBag.Query;
+}
+<div class="d-flex flex-wrap justify-content-between gap-2 mb-3">
+    <form method="get" class="d-flex flex-wrap gap-2">
+        @if (q.Deleted)
+        {
+            <input type="hidden" name="deleted" value="true" />
+        }
+        <input name="search" value="@q.Search" class="form-control" placeholder="Артикул или наименование" style="width: 260px" />
+        <input name="category" value="@q.Category" class="form-control" placeholder="Категория" style="width: 180px" />
+        <button class="btn btn-outline-secondary"><i class="bi bi-search"></i></button>
+    </form>
+    <a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Добавить</a>
+</div>
+<partial name="_TrashTabs" model="q.Deleted" />
+<div class="card rounded-top-0">
+    <div class="p-2 border-bottom"><partial name="_BulkBar" model="q.Deleted" /></div>
+    <div class="table-responsive">
+    <table class="table table-hover mb-0">
+        <thead>
+        <tr>
+            <th style="width: 1px"><input type="checkbox" class="form-check-input" data-check-all /></th>
+            <th>@Html.SortHeader("article", "Артикул")</th>
+            <th>@Html.SortHeader("name", "Наименование")</th>
+            <th>@Html.SortHeader("category", "Категория")</th>
+            <th>Ед.</th>
+            <th class="text-end">@Html.SortHeader("minstock", "Мин. запас")</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var p in Model.Items)
+        {
+            <tr>
+                <td><input type="checkbox" class="form-check-input" name="ids" value="@p.PartId" form="bulk" /></td>
+                <td class="font-monospace">@p.Article</td>
+                <td>@p.Name</td>
+                <td>@p.Category</td>
+                <td>@p.Unit</td>
+                <td class="text-end">@p.MinStock</td>
+                <td class="text-end text-nowrap"><partial name="_RowActions" model="(p.PartId, p.DeletedAt != null, p.Name)" /></td>
+            </tr>
+        }
+        @if (Model.Items.Count == 0)
+        {
+            <tr><td colspan="7" class="text-center text-muted py-3">Запчасти не найдены</td></tr>
+        }
+        </tbody>
+    </table>
+    </div>
+    <partial name="_Pager" model="new PagerModel(Model.Page, Model.Size, Model.Total)" />
+</div>

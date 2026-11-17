@@ -1,0 +1,174 @@
+@model PagedResult<UserDto>
+@{
+    ViewData["Title"] = "Пользователи и роли";
+    var q = (UserListQuery)ViewBag.Query;
+    var roles = (List<RoleDto>)ViewBag.RoleStats;
+    var stats = (DashboardDto)ViewBag.Stats;
+    var u = stats.Users;
+    var returnUrl = Context.Request.Path + Context.Request.QueryString;
+    var tab = q.Deleted ? "trash" : q.Blocked ? "blocked" : "active";
+    var myId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+}
+@* ФИО админу приходят из Api уже скрытыми («И****в А. А.»), работаю с учётками по email *@
+<div class="row g-3 mb-3">
+    <div class="col-6 col-lg-3"><div class="card stat p-3"><div class="label">Всего</div><div class="value">@u.Total</div></div></div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat p-3" title="Входили за последние 30 дней и не заблокированы">
+            <div class="label">Активных <i class="bi bi-info-circle"></i></div><div class="value text-success">@u.Active</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3"><div class="card stat p-3"><div class="label">Заблокировано</div><div class="value text-danger">@u.Blocked</div></div></div>
+    <div class="col-6 col-lg-3"><div class="card stat p-3"><div class="label">В корзине</div><div class="value text-secondary">@u.Deleted</div></div></div>
+</div>
+<div class="row g-3 mb-4">
+    <div class="col-lg-5">
+        <div class="card p-3 h-100">
+            <h2 class="h6">Пользователи по ролям</h2>
+            <div class="chart-box"><canvas id="rolesChart"></canvas></div>
+        </div>
+    </div>
+    <div class="col-lg-7">
+        <div class="card p-3 h-100">
+            <h2 class="h6">Регистрации по месяцам</h2>
+            <div class="chart-box"><canvas id="regChart"></canvas></div>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex flex-wrap justify-content-between gap-2 mb-3">
+    <form method="get" class="d-flex flex-wrap gap-2">
+        @if (q.Deleted)
+        {
+            <input type="hidden" name="deleted" value="true" />
+        }
+        @if (q.Blocked)
+        {
+            <input type="hidden" name="blocked" value="true" />
+        }
+        <input name="search" value="@q.Search" class="form-control" placeholder="Email или ФИО" style="width: 260px" />
+        <select name="roleId" class="form-select w-auto" onchange="this.form.submit()">
+            <option value="">Все роли</option>
+            @foreach (var r in roles)
+            {
+                <option value="@r.RoleId" selected="@(q.RoleId == r.RoleId)">@r.Name (@r.UsersCount)</option>
+            }
+        </select>
+        <button class="btn btn-outline-secondary"><i class="bi bi-search"></i></button>
+    </form>
+    <a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Добавить</a>
+</div>
+
+<ul class="nav nav-tabs">
+    <li class="nav-item"><a class="nav-link @(tab == "active" ? "active" : "")" href="@ListUrl.With(Context.Request, ("deleted", null), ("blocked", null), ("page", null))">Все</a></li>
+    <li class="nav-item"><a class="nav-link @(tab == "blocked" ? "active" : "")" href="@ListUrl.With(Context.Request, ("deleted", null), ("blocked", "true"), ("page", null))"><i class="bi bi-lock"></i> Заблокированные</a></li>
+    <li class="nav-item"><a class="nav-link @(tab == "trash" ? "active" : "")" href="@ListUrl.With(Context.Request, ("deleted", "true"), ("blocked", null), ("page", null))"><i class="bi bi-trash"></i> Корзина</a></li>
+</ul>
+<div class="card rounded-top-0">
+    <div class="p-2 border-bottom"><partial name="_BulkBar" model="q.Deleted" /></div>
+    <div class="table-responsive">
+    <table class="table table-hover mb-0">
+        <thead>
+        <tr>
+            <th style="width: 1px"><input type="checkbox" class="form-check-input" data-check-all /></th>
+            <th>@Html.SortHeader("email", "Email")</th>
+            <th>@Html.SortHeader("name", "ФИО")</th>
+            <th>@Html.SortHeader("role", "Роль")</th>
+            <th>Телефон</th>
+            <th>Последний вход</th>
+            <th>@Html.SortHeader("created", "Создан")</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var x in Model.Items)
+        {
+            <tr class="@(x.IsBlocked ? "table-warning" : "")">
+                <td><input type="checkbox" class="form-check-input" name="ids" value="@x.UserId" form="bulk" /></td>
+                <td>
+                    @x.Email
+                    @if (x.IsBlocked)
+                    {
+                        <span class="badge bg-danger ms-1" title="@x.BlockReason"><i class="bi bi-lock-fill"></i> заблокирован</span>
+                    }
+                </td>
+                <td>@x.FullName</td>
+                <td>@x.RoleName</td>
+                <td>@x.Phone</td>
+                <td>@HtmlHelpers.Time(x.LastLoginAt)</td>
+                <td>@HtmlHelpers.Day(x.CreatedAt)</td>
+                <td class="text-end text-nowrap">
+                    @if (x.UserId.ToString() == myId)
+                    {
+                        @* себя не блокирую и не удаляю — Api это тоже не даст *@
+                        <a asp-action="Edit" asp-route-id="@x.UserId" class="btn btn-sm btn-outline-secondary" title="Изменить"><i class="bi bi-pencil"></i></a>
+                        <span class="badge bg-primary-subtle text-primary-emphasis">это вы</span>
+                    }
+                    else
+                    {
+                    if (x.DeletedAt == null)
+                    {
+                        if (x.IsBlocked)
+                        {
+                            <form asp-action="Unblock" asp-route-id="@x.UserId" method="post" class="d-inline">
+                                <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                <button class="btn btn-sm btn-outline-success" title="Разблокировать"><i class="bi bi-unlock"></i></button>
+                            </form>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-warning" title="Заблокировать"
+                                    data-bs-toggle="modal" data-bs-target="#blockModal"
+                                    data-action="@Url.Action("Block", new { id = x.UserId })" data-who="@x.Email">
+                                <i class="bi bi-lock"></i>
+                            </button>
+                        }
+                    }
+                    <partial name="_RowActions" model="(x.UserId, x.DeletedAt != null, x.Email)" />
+                    }
+                </td>
+            </tr>
+        }
+        @if (Model.Items.Count == 0)
+        {
+            <tr><td colspan="8" class="text-center text-muted py-3">Пользователи не найдены</td></tr>
+        }
+        </tbody>
+    </table>
+    </div>
+    <partial name="_Pager" model="new PagerModel(Model.Page, Model.Size, Model.Total)" />
+</div>
+
+<div class="modal fade" id="blockModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form method="post" class="modal-content">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="returnUrl" value="@returnUrl" />
+            <div class="modal-header">
+                <h5 class="modal-title">Заблокировать <span data-who></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="small text-muted">Пользователь не сможет войти, а открытые сессии завершатся сразу. Учётка и её история остаются.</p>
+                <label class="form-label">Причина</label>
+                <textarea name="reason" class="form-control" rows="2" required minlength="3" maxlength="200"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-link" data-bs-dismiss="modal">Отмена</button>
+                <button class="btn btn-warning"><i class="bi bi-lock"></i> Заблокировать</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        efChart('rolesChart', 'doughnut',
+            @Json.Serialize(stats.UsersByRole.Select(x => x.Role)),
+            [{ label: 'Пользователей', data: @Json.Serialize(stats.UsersByRole.Select(x => x.Users)) }],
+            { plugins: { legend: { position: 'right' } } });
+        efChart('regChart', 'bar',
+            @Json.Serialize(stats.RegistrationsByMonth.Select(x => HtmlHelpers.Month(x.Month))),
+            [{ label: 'Новых учёток', data: @Json.Serialize(stats.RegistrationsByMonth.Select(x => x.Count)) }],
+            { scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } });
+    </script>
+}

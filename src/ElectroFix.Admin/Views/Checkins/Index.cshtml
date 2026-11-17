@@ -1,0 +1,58 @@
+@model PagedResult<CheckinDto>
+@{
+    ViewData["Title"] = "Приёмки";
+    ViewData["ReadOnly"] = true;
+    var q = (StatusListQuery)ViewBag.Query;
+}
+<form method="get" class="d-flex flex-wrap gap-2 mb-3">
+    <input name="search" value="@q.Search" class="form-control" placeholder="Клиент или устройство" style="width: 260px" />
+    <select name="status" class="form-select w-auto" onchange="this.form.submit()">
+        <option value="">Все статусы</option>
+        @foreach (var (code, label) in Labels.CheckinStatuses)
+        {
+            <option value="@code" selected="@(q.Status == code)">@label</option>
+        }
+    </select>
+    <button class="btn btn-outline-secondary"><i class="bi bi-search"></i></button>
+</form>
+<div class="card">
+    <div class="table-responsive">
+    <table class="table table-hover mb-0">
+        <thead>
+        <tr>
+            <th>@Html.SortHeader("slot", "Время записи")</th>
+            <th>Клиент</th>
+            <th>Устройство</th>
+            <th>Филиал</th>
+            <th>@Html.SortHeader("priority", "Приоритет")</th>
+            <th>@Html.SortHeader("status", "Статус")</th>
+            <th>Заказ-наряд</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var c in Model.Items)
+        {
+            <tr>
+                <td class="text-nowrap">@HtmlHelpers.Time(c.SlotStart)</td>
+                <td>@c.ClientName</td>
+                <td>@c.Device</td>
+                <td>@c.Branch</td>
+                <td>@Labels.Of(Labels.Priorities, c.Priority)</td>
+                <td>@Labels.Of(Labels.CheckinStatuses, c.Status)</td>
+                <td>
+                    @if (c.WorkOrderId != null)
+                    {
+                        <a asp-controller="WorkOrders" asp-action="Details" asp-route-id="@c.WorkOrderId">открыть</a>
+                    }
+                </td>
+            </tr>
+        }
+        @if (Model.Items.Count == 0)
+        {
+            <tr><td colspan="7" class="text-center text-muted py-3">Приёмок нет</td></tr>
+        }
+        </tbody>
+    </table>
+    </div>
+    <partial name="_Pager" model="new PagerModel(Model.Page, Model.Size, Model.Total)" />
+</div>

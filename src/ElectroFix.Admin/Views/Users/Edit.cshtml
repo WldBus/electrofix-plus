@@ -1,0 +1,66 @@
+@model UserSaveRequest
+@{
+    var id = (int)ViewBag.Id;
+    var item = ViewBag.Item as UserDto;
+    var isNew = id == 0;
+    ViewData["Title"] = isNew ? "Новый пользователь" : "Изменение пользователя";
+    // ФИО пришло скрытым — подсказываю, что его можно не трогать
+    var masked = item != null && item.FullName.Contains('*');
+}
+<div class="card p-4" style="max-width: 680px">
+    @if (item?.IsBlocked == true)
+    {
+        <div class="alert alert-warning py-2"><i class="bi bi-lock-fill"></i> Заблокирован. Причина: @item.BlockReason</div>
+    }
+    <form asp-action="Save" asp-route-id="@id" method="post">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2"></div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label asp-for="Email" class="form-label">Email (логин)</label>
+                <input asp-for="Email" class="form-control" />
+                <span asp-validation-for="Email" class="text-danger small"></span>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label asp-for="RoleId" class="form-label">Роль</label>
+                <select asp-for="RoleId" asp-items="(SelectList)ViewBag.Roles" class="form-select">
+                    <option value="0">— выберите —</option>
+                </select>
+                <span asp-validation-for="RoleId" class="text-danger small"></span>
+            </div>
+        </div>
+        <div class="mb-3">
+            <label asp-for="FullName" class="form-label">ФИО</label>
+            <input asp-for="FullName" class="form-control" />
+            @if (masked)
+            {
+                <div class="form-text"><i class="bi bi-eye-slash"></i> ФИО скрыто от администратора. Оставьте как есть — сохранится прежнее, или введите новое полностью.</div>
+            }
+            <span asp-validation-for="FullName" class="text-danger small"></span>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label asp-for="Phone" class="form-label">Телефон</label>
+                <input asp-for="Phone" class="form-control" placeholder="+79001234567" />
+                <span asp-validation-for="Phone" class="text-danger small"></span>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label asp-for="Password" class="form-label">@(isNew ? "Пароль" : "Новый пароль")</label>
+                <div class="input-group">
+                    <input asp-for="Password" type="password" class="form-control" autocomplete="new-password"
+                           placeholder="@(isNew ? "" : "не менять")" />
+                    <button type="button" class="btn btn-outline-secondary" title="Сгенерировать пароль"
+                            onclick="efGeneratePassword('Password')"><i class="bi bi-magic"></i></button>
+                    <button type="button" class="btn btn-outline-secondary" title="Скопировать"
+                            onclick="efCopy('Password', this)"><i class="bi bi-clipboard"></i></button>
+                </div>
+                <div class="form-text">Кнопка <i class="bi bi-magic"></i> создаёт надёжный пароль. Скопируйте его и передайте сотруднику.</div>
+                <span asp-validation-for="Password" class="text-danger small"></span>
+            </div>
+        </div>
+        <button class="btn btn-primary">Сохранить</button>
+        <a asp-action="Index" class="btn btn-link">Отмена</a>
+    </form>
+</div>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

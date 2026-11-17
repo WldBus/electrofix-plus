@@ -1,0 +1,44 @@
+@model PartSaveRequest
+@{
+    var id = (int)ViewBag.Id;
+    ViewData["Title"] = id == 0 ? "Новая запчасть" : "Изменение запчасти";
+}
+<div class="card p-4" style="max-width: 680px">
+    <form asp-action="Save" asp-route-id="@id" method="post">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2"></div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label asp-for="Article" class="form-label">Артикул</label>
+                <input asp-for="Article" class="form-control font-monospace" />
+                <span asp-validation-for="Article" class="text-danger small"></span>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label asp-for="Category" class="form-label">Категория</label>
+                <input asp-for="Category" class="form-control" />
+                <span asp-validation-for="Category" class="text-danger small"></span>
+            </div>
+        </div>
+        <div class="mb-3">
+            <label asp-for="Name" class="form-label">Наименование</label>
+            <input asp-for="Name" class="form-control" />
+            <span asp-validation-for="Name" class="text-danger small"></span>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label asp-for="Unit" class="form-label">Единица измерения</label>
+                <select asp-for="Unit" class="form-select" asp-items="@(new SelectList(PartSaveRequest.Units))"></select>
+                <span asp-validation-for="Unit" class="text-danger small"></span>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label asp-for="MinStock" class="form-label">Минимальный запас</label>
+                <input asp-for="MinStock" class="form-control" />
+                <span asp-validation-for="MinStock" class="text-danger small"></span>
+            </div>
+        </div>
+        <button class="btn btn-primary">Сохранить</button>
+        <a asp-action="Index" class="btn btn-link">Отмена</a>
+    </form>
+</div>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

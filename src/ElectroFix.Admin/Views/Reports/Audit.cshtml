@@ -1,0 +1,133 @@
+@model PagedResult<AuditEntryDto>
+@{
+    ViewData["Title"] = "Журнал аудита";
+    ViewData["ReadOnly"] = true;
+    var q = (AuditListQuery)ViewBag.Query;
+}
+@* Журнал пишут триггеры БД (изменения данных) и Api (входы, блокировки, запросы без прав).
+   ФИО внутри данных Api отдаёт админу скрытыми *@
+<form method="get" class="card p-3 mb-3">
+    <div class="row g-2 align-items-end">
+        <div class="col-6 col-md-2">
+            <label class="form-label small mb-1">С даты</label>
+            <input type="date" name="from" value="@q.From?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label small mb-1">По дату</label>
+            <input type="date" name="to" value="@q.To?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small mb-1">Пользователь</label>
+            <input name="user" value="@q.User" class="form-control form-control-sm" placeholder="email" />
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label small mb-1">Действие</label>
+            <select name="action" class="form-select form-select-sm">
+                <option value="">Все</option>
+                @foreach (var (code, label) in Labels.AuditActions)
+                {
+                    <option value="@code" selected="@(q.Action == code)">@label</option>
+                }
+            </select>
+        </div>
+        <div class="col-6 col-md-3">
+            <label class="form-label small mb-1">Таблица</label>
+            <select name="table" class="form-select form-select-sm">
+                <option value="">Все</option>
+                @foreach (var (code, label) in Labels.AuditTables)
+                {
+                    <option value="@code" selected="@(q.Table == code)">@label</option>
+                }
+            </select>
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label small mb-1">IP</label>
+            <input name="ip" value="@q.Ip" class="form-control form-control-sm" />
+        </div>
+        <div class="col-6 col-md-3">
+            <label class="form-label small mb-1">Поиск в данных</label>
+            <input name="search" value="@q.Search" class="form-control form-control-sm" placeholder="номер, сумма, адрес..." />
+        </div>
+        <div class="col-md-3">
+            <div class="form-check mb-1">
+                <input class="form-check-input" type="checkbox" name="security" value="true" id="security" checked="@q.Security" />
+                <label class="form-check-label small" for="security">Только события безопасности</label>
+            </div>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <button class="btn btn-sm btn-primary"><i class="bi bi-funnel"></i> Применить</button>
+            <a asp-action="Audit" class="btn btn-sm btn-link">Сбросить</a>
+        </div>
+    </div>
+</form>
+
+<div class="card">
+    <div class="table-responsive">
+    <table class="table table-sm mb-0">
+        <thead>
+        <tr>
+            <th>@Html.SortHeader("created", "Время")</th>
+            <th>Пользователь</th>
+            <th>@Html.SortHeader("action", "Действие")</th>
+            <th>@Html.SortHeader("table", "Объект")</th>
+            <th>@Html.SortHeader("ip", "IP")</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var a in Model.Items)
+        {
+            var security = Labels.SecurityActions.Contains(a.Action);
+            <tr class="@(security ? "row-security" : "")">
+                <td class="text-nowrap">@HtmlHelpers.Time(a.CreatedAt)</td>
+                <td>
+                    @if (a.UserEmail != null)
+                    {
+                        <div>@a.UserEmail</div>
+                        <div class="small text-muted">@a.UserName</div>
+                    }
+                    else
+                    {
+                        <span class="text-muted">—</span>
+                    }
+                </td>
+                <td>
+                    <span class="badge @(security ? "bg-danger" : "bg-light text-dark border")">@Labels.Of(Labels.AuditActions, a.Action)</span>
+                </td>
+                <td>@Labels.Of(Labels.AuditTables, a.ObjectTable) @(a.ObjectId != null ? "№" + a.ObjectId : "")</td>
+                <td>@a.IpAddress</td>
+                <td class="text-end">
+                    @if (a.BeforeData != null || a.AfterData != null || a.UserAgent != null)
+                    {
+                        <button class="btn btn-sm btn-link py-0" type="button" data-bs-toggle="collapse" data-bs-target="#a@(a.AuditId)">подробнее</button>
+                    }
+                </td>
+            </tr>
+            <tr class="collapse" id="a@(a.AuditId)">
+                <td colspan="6">
+                    <div class="row g-2">
+                        @if (a.BeforeData != null)
+                        {
+                            <div class="col-md-6"><div class="small text-muted">Было</div><pre class="audit mb-0">@a.BeforeData</pre></div>
+                        }
+                        @if (a.AfterData != null)
+                        {
+                            <div class="col-md-6"><div class="small text-muted">Стало / данные</div><pre class="audit mb-0">@a.AfterData</pre></div>
+                        }
+                        @if (a.UserAgent != null)
+                        {
+                            <div class="col-12 small text-muted">Браузер: @a.UserAgent</div>
+                        }
+                    </div>
+                </td>
+            </tr>
+        }
+        @if (Model.Items.Count == 0)
+        {
+            <tr><td colspan="6" class="text-center text-muted py-3">Записей нет</td></tr>
+        }
+        </tbody>
+    </table>
+    </div>
+    <partial name="_Pager" model="new PagerModel(Model.Page, Model.Size, Model.Total)" />
+</div>

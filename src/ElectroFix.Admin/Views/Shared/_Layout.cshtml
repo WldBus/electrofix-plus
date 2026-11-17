@@ -1,50 +1,88 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+﻿@{
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString();
+    var action = ViewContext.RouteData.Values["action"]?.ToString();
+    string Active(string c, string? a = null) =>
+        controller == c && (a == null || action == a) ? "active" : "";
+}
+<!DOCTYPE html>
+<html lang="ru">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - ElectroFix.Admin</title>
-    <script type="importmap"></script>
+    <title>@ViewData["Title"] – ElectroFix+ Админ-панель</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/ElectroFix.Admin.styles.css" asp-append-version="true" />
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">ElectroFix.Admin</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                    </ul>
-                </div>
+@if (User.Identity?.IsAuthenticated == true)
+{
+    <div class="layout d-flex min-vh-100">
+        <nav class="sidebar d-flex flex-column p-3">
+            <a class="brand mb-3" asp-controller="Home" asp-action="Index">
+                <i class="bi bi-lightning-charge-fill"></i> ElectroFix+
+                <small class="d-block">Администрирование БД</small>
+            </a>
+            <ul class="nav nav-pills flex-column gap-1">
+                <li class="nav-section">Статистика</li>
+                <li><a class="nav-link @Active("Home")" asp-controller="Home" asp-action="Index"><i class="bi bi-bar-chart-line"></i> Обзор</a></li>
+                <li><a class="nav-link @Active("Security")" asp-controller="Security" asp-action="Index"><i class="bi bi-shield-lock"></i> Безопасность</a></li>
+                <li class="nav-section">Администрирование</li>
+                <li><a class="nav-link @Active("Users")" asp-controller="Users" asp-action="Index"><i class="bi bi-person-badge"></i> Пользователи и роли</a></li>
+                <li><a class="nav-link @Active("Reports", "Audit")" asp-controller="Reports" asp-action="Audit"><i class="bi bi-journal-text"></i> Журнал аудита</a></li>
+                <li class="nav-section">Клиенты и устройства</li>
+                <li><a class="nav-link @Active("Clients")" asp-controller="Clients" asp-action="Index"><i class="bi bi-people"></i> Клиенты</a></li>
+                <li><a class="nav-link @Active("Devices")" asp-controller="Devices" asp-action="Index"><i class="bi bi-phone"></i> Устройства</a></li>
+                <li class="nav-section">Справочники</li>
+                <li><a class="nav-link @Active("Services")" asp-controller="Services" asp-action="Index"><i class="bi bi-tools"></i> Работы</a></li>
+                <li><a class="nav-link @Active("Parts")" asp-controller="Parts" asp-action="Index"><i class="bi bi-cpu"></i> Запчасти</a></li>
+                <li class="nav-section">Приёмка и ремонт</li>
+                <li><a class="nav-link @Active("Checkins")" asp-controller="Checkins" asp-action="Index"><i class="bi bi-calendar-check"></i> Приёмки</a></li>
+                <li><a class="nav-link @Active("WorkOrders")" asp-controller="WorkOrders" asp-action="Index"><i class="bi bi-clipboard-check"></i> Заказ-наряды</a></li>
+                <li class="nav-section">Склад и финансы</li>
+                <li><a class="nav-link @Active("Reports", "Stock")" asp-controller="Reports" asp-action="Stock"><i class="bi bi-box-seam"></i> Остатки</a></li>
+                <li><a class="nav-link @Active("Reports", "StockMoves")" asp-controller="Reports" asp-action="StockMoves"><i class="bi bi-arrow-left-right"></i> Движения</a></li>
+                <li><a class="nav-link @Active("Reports", "Invoices")" asp-controller="Reports" asp-action="Invoices"><i class="bi bi-receipt"></i> Счета</a></li>
+                <li><a class="nav-link @Active("Reports", "Payments")" asp-controller="Reports" asp-action="Payments"><i class="bi bi-cash-coin"></i> Платежи</a></li>
+                <li><a class="nav-link @Active("Reports", "Warranty")" asp-controller="Reports" asp-action="Warranty"><i class="bi bi-shield-check"></i> Гарантия</a></li>
+            </ul>
+            <div class="mt-auto pt-3 border-top border-secondary">
+                <div class="small text-white-50">Вы вошли как</div>
+                <div class="text-white mb-2">@User.Identity.Name</div>
+                <form asp-controller="Account" asp-action="Logout" method="post">
+                    <button class="btn btn-sm btn-outline-light w-100"><i class="bi bi-box-arrow-right"></i> Выйти</button>
+                </form>
             </div>
         </nav>
-    </header>
-    <div class="container">
-        <main role="main" class="pb-3">
+        <main class="flex-grow-1 p-4">
+            <h1 class="h3 mb-4">
+                @ViewData["Title"]
+                @if (ViewData["ReadOnly"] is true)
+                {
+                    <span class="badge bg-light text-secondary border fs-6 fw-normal align-middle ms-2"><i class="bi bi-eye"></i> только просмотр</span>
+                }
+            </h1>
+            @if (TempData["Success"] is string ok)
+            {
+                <div class="alert alert-success alert-dismissible fade show">@ok
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+            }
+            @if (TempData["Error"] is string err)
+            {
+                <div class="alert alert-danger alert-dismissible fade show">@err
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+            }
             @RenderBody()
         </main>
     </div>
-
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - ElectroFix.Admin - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-        </div>
-    </footer>
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
-    @await RenderSectionAsync("Scripts", required: false)
+}
+else
+{
+    @RenderBody()
+}
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="~/js/site.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

@@ -1,0 +1,71 @@
+@model ClientSaveRequest
+@{
+    var id = (int)ViewBag.Id;
+    var isNew = id == 0;
+    ViewData["Title"] = isNew ? "Новый клиент" : "Изменение клиента";
+    var masked = Model.DisplayName.Contains('*');
+}
+<div class="card p-4" style="max-width: 680px">
+    <form asp-action="Save" asp-route-id="@id" method="post">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2"></div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label asp-for="ClientType" class="form-label">Тип клиента</label>
+                @if (isNew)
+                {
+                    <select asp-for="ClientType" class="form-select" asp-items="@(new SelectList(Labels.ClientTypes, "Key", "Value"))"></select>
+                }
+                else
+                {
+                    @* тип и ИНН после создания не меняются (так в процедуре sp_client_update) *@
+                    <input type="hidden" asp-for="ClientType" />
+                    <input class="form-control" value="@Labels.Of(Labels.ClientTypes, Model.ClientType)" disabled />
+                }
+            </div>
+            <div class="col-md-6 mb-3">
+                <label asp-for="Inn" class="form-label">ИНН</label>
+                @if (isNew)
+                {
+                    <input asp-for="Inn" class="form-control" placeholder="10 цифр у организаций" />
+                    <span asp-validation-for="Inn" class="text-danger small"></span>
+                }
+                else
+                {
+                    <input type="hidden" asp-for="Inn" />
+                    <input class="form-control" value="@Model.Inn" disabled />
+                }
+            </div>
+        </div>
+        <div class="mb-3">
+            <label asp-for="DisplayName" class="form-label">Наименование / ФИО</label>
+            <input asp-for="DisplayName" class="form-control" />
+            @if (masked)
+            {
+                <div class="form-text"><i class="bi bi-eye-slash"></i> ФИО скрыто от администратора. Оставьте как есть — сохранится прежнее.</div>
+            }
+            <span asp-validation-for="DisplayName" class="text-danger small"></span>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label asp-for="Phone" class="form-label">Телефон</label>
+                <input asp-for="Phone" class="form-control" placeholder="+79001234567" />
+                <span asp-validation-for="Phone" class="text-danger small"></span>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label asp-for="Email" class="form-label">Email</label>
+                <input asp-for="Email" class="form-control" />
+                <span asp-validation-for="Email" class="text-danger small"></span>
+            </div>
+        </div>
+        <div class="mb-3">
+            <label asp-for="Address" class="form-label">Адрес</label>
+            <input asp-for="Address" class="form-control" />
+            <span asp-validation-for="Address" class="text-danger small"></span>
+        </div>
+        <button class="btn btn-primary">Сохранить</button>
+        <a asp-action="Index" class="btn btn-link">Отмена</a>
+    </form>
+</div>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

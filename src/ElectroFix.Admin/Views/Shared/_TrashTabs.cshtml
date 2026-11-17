@@ -1,0 +1,10 @@
+@model bool
+@* вкладки «Активные / Корзина» над списком; Model — открыта ли корзина *@
+<ul class="nav nav-tabs mb-0">
+    <li class="nav-item">
+        <a class="nav-link @(Model ? "" : "active")" href="@ListUrl.With(Context.Request, ("deleted", null), ("page", null))">Активные</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(Model ? "active" : "")" href="@ListUrl.With(Context.Request, ("deleted", "true"), ("page", null))"><i class="bi bi-trash"></i> Корзина</a>
+    </li>
+</ul>

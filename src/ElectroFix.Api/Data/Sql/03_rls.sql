@@ -1,0 +1,17 @@
+-- RLS без правил: на владельца таблиц (подключение Api) не действует,
+-- а всем остальным (например, ролям anon и authenticated в Supabase) закрывает доступ
+ALTER TABLE roles          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE users          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE clients        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE devices        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE checkins       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE work_orders    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE services       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE parts          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE order_services ENABLE ROW LEVEL SECURITY;
+ALTER TABLE order_parts    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE invoices       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE payments       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE warranty_cases ENABLE ROW LEVEL SECURITY;
+ALTER TABLE stock_moves    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE audit_log      ENABLE ROW LEVEL SECURITY;

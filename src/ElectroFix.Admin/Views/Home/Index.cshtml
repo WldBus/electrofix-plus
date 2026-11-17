@@ -1,8 +1,188 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@model DashboardDto
+@{
+    ViewData["Title"] = "Обзор";
+    var months = (int)ViewBag.Months;
+    var recent = (PagedResult<WorkOrderDto>)ViewBag.Recent;
+    var s = Model.Summary;
+    // среднее время ремонта за выбранный период: взвешиваю по числу закрытых заказ-нарядов
+    var closed = Model.RepairTimeByMonth.Sum(x => x.Closed);
+    var avgDays = closed == 0 ? (decimal?)null
+        : Model.RepairTimeByMonth.Where(x => x.AvgDays != null).Sum(x => x.AvgDays!.Value * x.Closed) / closed;
 }
+@* Главная админки: цифры и графики от сервиса статистики (ElectroFix.Stats) *@
+<form method="get" class="d-flex align-items-center gap-2 mb-3">
+    <label class="text-muted small">Период графиков:</label>
+    <select name="months" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+        @foreach (var m in new[] { 3, 6, 12, 24 })
+        {
+            <option value="@m" selected="@(m == months)">@m мес.</option>
+        }
+    </select>
+</form>
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="row g-3 mb-3">
+    <div class="col-6 col-xl">
+        <div class="card stat p-3"><div class="label">Клиентов</div><div class="value">@s.Clients</div></div>
+    </div>
+    <div class="col-6 col-xl">
+        <div class="card stat p-3">
+            <div class="label">Пользователей / активных</div>
+            <div class="value">@Model.Users.Total <span class="text-success fs-5">/ @Model.Users.Active</span></div>
+        </div>
+    </div>
+    <div class="col-6 col-xl">
+        <div class="card stat p-3"><div class="label">Заказ-нарядов в работе</div><div class="value">@s.ActiveOrders</div></div>
+    </div>
+    <div class="col-6 col-xl">
+        <div class="card stat p-3">
+            <div class="label">Среднее время ремонта</div>
+            <div class="value">@(avgDays == null ? "–" : HtmlHelpers.Num(Math.Round(avgDays.Value, 1)) + " дн.")</div>
+        </div>
+    </div>
+    <div class="col-12 col-xl">
+        <div class="card stat p-3"><div class="label">Долг клиентов</div><div class="value text-danger">@HtmlHelpers.Money(s.TotalDebt)</div></div>
+    </div>
 </div>
+
+<div class="row g-3 mb-3">
+    <div class="col-lg-4">
+        <div class="card p-3 h-100">
+            <h2 class="h6">Заказ-наряды по статусам</h2>
+            <div class="chart-box"><canvas id="statusChart"></canvas></div>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="card p-3 h-100">
+            <h2 class="h6">Выручка по месяцам</h2>
+            <div class="chart-box"><canvas id="revenueChart"></canvas></div>
+        </div>
+    </div>
+</div>
+
+<h2 class="h5 mt-4 mb-3">Клиенты и заказы</h2>
+<div class="row g-3 mb-3">
+    <div class="col-lg-7">
+        <div class="card p-3 h-100">
+            <h3 class="h6">Новые клиенты и заказ-наряды</h3>
+            <div class="chart-box"><canvas id="newChart"></canvas></div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card p-3 h-100">
+            <h3 class="h6">Среднее время ремонта, дней <small class="text-muted">(по месяцу закрытия)</small></h3>
+            <div class="chart-box"><canvas id="repairChart"></canvas></div>
+        </div>
+    </div>
+</div>
+
+<h2 class="h5 mt-4 mb-3">Мастера, работы и запчасти</h2>
+<div class="row g-3 mb-3">
+    <div class="col-lg-6">
+        <div class="card p-3 h-100">
+            <h3 class="h6">Загрузка мастеров <small class="text-muted">(незакрытые заказ-наряды)</small></h3>
+            <div class="chart-box"><canvas id="workloadChart"></canvas></div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card p-3 h-100">
+            <h3 class="h6">Топ работ по выручке</h3>
+            <div class="chart-box"><canvas id="servicesChart"></canvas></div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card p-3 h-100">
+            <h3 class="h6">Самые расходуемые запчасти</h3>
+            <div class="chart-box"><canvas id="partsChart"></canvas></div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <h3 class="h6 p-3 mb-0">Запчасти ниже минимального запаса</h3>
+            <table class="table table-sm mb-0">
+                <thead><tr><th>Артикул</th><th>Название</th><th class="text-end">Есть</th><th class="text-end">Мин.</th><th class="text-end">Дозаказать</th></tr></thead>
+                <tbody>
+                @foreach (var p in Model.PartsBelowMin)
+                {
+                    <tr>
+                        <td>@p.Article</td>
+                        <td>@p.Name</td>
+                        <td class="text-end">@HtmlHelpers.Num(p.OnHand)</td>
+                        <td class="text-end">@p.MinStock</td>
+                        <td class="text-end text-danger fw-semibold">@HtmlHelpers.Num(p.ToOrder)</td>
+                    </tr>
+                }
+                @if (Model.PartsBelowMin.Count == 0)
+                {
+                    <tr><td colspan="5" class="text-center text-muted">Всего хватает</td></tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="d-flex justify-content-between align-items-center p-3">
+        <h2 class="h6 mb-0">Последние заказ-наряды</h2>
+        <a asp-controller="WorkOrders" asp-action="Index" class="small">Все заказ-наряды →</a>
+    </div>
+    <table class="table table-hover mb-0">
+        <thead><tr><th>Номер</th><th>Клиент</th><th>Устройство</th><th>Статус</th><th class="text-end">Сумма</th><th>Открыт</th></tr></thead>
+        <tbody>
+        @foreach (var w in recent.Items)
+        {
+            <tr>
+                <td><a asp-controller="WorkOrders" asp-action="Details" asp-route-id="@w.WorkOrderId">@w.WorkOrderNumber</a></td>
+                <td>@w.Client</td>
+                <td>@w.Device</td>
+                <td><partial name="_StatusBadge" model="w.Status" /></td>
+                <td class="text-end">@HtmlHelpers.Money(w.TotalAmount)</td>
+                <td>@HtmlHelpers.Day(w.OpenedAt)</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+@section Scripts {
+    <script>
+        efChart('statusChart', 'doughnut',
+            @Json.Serialize(Model.WorkOrdersByStatus.Select(x => Labels.Of(Labels.WorkOrderStatuses, x.Status))),
+            [{ label: 'Заказ-нарядов', data: @Json.Serialize(Model.WorkOrdersByStatus.Select(x => x.Orders)) }],
+            { plugins: { legend: { position: 'right' } } });
+
+        efChart('revenueChart', 'bar',
+            @Json.Serialize(Model.RevenueByMonth.Select(x => HtmlHelpers.Month(x.Month))),
+            [{ label: 'Оплаты, ₽', data: @Json.Serialize(Model.RevenueByMonth.Select(x => x.Income)), color: '#16a34a' },
+             { label: 'Возвраты, ₽', data: @Json.Serialize(Model.RevenueByMonth.Select(x => x.Refunds)), color: '#dc2626' }]);
+
+        efChart('newChart', 'line',
+            @Json.Serialize(Model.NewByMonth.Select(x => HtmlHelpers.Month(x.Month))),
+            [{ label: 'Новые клиенты', data: @Json.Serialize(Model.NewByMonth.Select(x => x.Clients)), fill: true },
+             { label: 'Новые заказ-наряды', data: @Json.Serialize(Model.NewByMonth.Select(x => x.Orders)), fill: true }],
+            { scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } });
+
+        efChart('repairChart', 'line',
+            @Json.Serialize(Model.RepairTimeByMonth.Select(x => HtmlHelpers.Month(x.Month))),
+            [{ label: 'Дней', data: @Json.Serialize(Model.RepairTimeByMonth.Select(x => x.AvgDays)), color: '#7c3aed', spanGaps: true }],
+            { scales: { y: { beginAtZero: true } } });
+
+        efChart('workloadChart', 'bar',
+            @Json.Serialize(Model.MasterWorkload.Select(x => x.Master)),
+            [{ label: 'Заказ-нарядов', data: @Json.Serialize(Model.MasterWorkload.Select(x => x.ActiveOrders)) },
+             { label: 'Нормо-часов', data: @Json.Serialize(Model.MasterWorkload.Select(x => x.NormHours)), color: '#f59e0b' },
+             { label: 'Факт, часов', data: @Json.Serialize(Model.MasterWorkload.Select(x => x.ActualHours)), color: '#0891b2' }],
+            { indexAxis: 'y' });
+
+        efChart('servicesChart', 'bar',
+            @Json.Serialize(Model.TopServices.Select(x => x.Name)),
+            [{ label: 'Выручка, ₽', data: @Json.Serialize(Model.TopServices.Select(x => x.Revenue)), color: '#16a34a' },
+             { label: 'Раз выполнено', data: @Json.Serialize(Model.TopServices.Select(x => x.Times)), color: '#2563eb', xAxisID: 'x2' }],
+            { indexAxis: 'y', scales: { x: { position: 'bottom' }, x2: { position: 'top', grid: { display: false }, ticks: { precision: 0 } } } });
+
+        efChart('partsChart', 'bar',
+            @Json.Serialize(Model.TopParts.Select(x => x.Name)),
+            [{ label: 'Израсходовано', data: @Json.Serialize(Model.TopParts.Select(x => x.Used)), color: '#ea580c' }],
+            { indexAxis: 'y', scales: { x: { beginAtZero: true } } });
+    </script>
+}

@@ -1,0 +1,42 @@
+@model PagedResult<PaymentDto>
+@{
+    ViewData["Title"] = "Платежи";
+    ViewData["ReadOnly"] = true;
+    var q = (ListQuery)ViewBag.Query;
+}
+<form method="get" class="d-flex gap-2 mb-3">
+    <input name="search" value="@q.Search" class="form-control" placeholder="Номер счёта" style="width: 240px" />
+    <button class="btn btn-outline-secondary"><i class="bi bi-search"></i></button>
+</form>
+<div class="card">
+    <div class="table-responsive">
+    <table class="table table-hover mb-0">
+        <thead>
+        <tr>
+            <th>@Html.SortHeader("paid", "Когда")</th>
+            <th>Счёт</th>
+            <th class="text-end">@Html.SortHeader("amount", "Сумма")</th>
+            <th>Способ</th>
+            <th>Тип</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var p in Model.Items)
+        {
+            <tr>
+                <td class="text-nowrap">@HtmlHelpers.Time(p.PaidAt)</td>
+                <td>@p.InvoiceNumber</td>
+                <td class="text-end @(p.IsRefund ? "text-danger" : "")">@(p.IsRefund ? "−" : "")@HtmlHelpers.Money(p.Amount)</td>
+                <td>@Labels.Of(Labels.PaymentMethods, p.Method)</td>
+                <td>@(p.IsRefund ? "Возврат" : "Оплата")</td>
+            </tr>
+        }
+        @if (Model.Items.Count == 0)
+        {
+            <tr><td colspan="5" class="text-center text-muted py-3">Платежей нет</td></tr>
+        }
+        </tbody>
+    </table>
+    </div>
+    <partial name="_Pager" model="new PagerModel(Model.Page, Model.Size, Model.Total)" />
+</div>

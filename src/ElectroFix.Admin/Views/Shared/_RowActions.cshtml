@@ -1,0 +1,25 @@
+@model (int Id, bool Deleted, string Name)
+@* кнопки в строке списка: изменить и в корзину, а в корзине — восстановить и удалить навсегда *@
+@{
+    var returnUrl = Context.Request.Path + Context.Request.QueryString;
+}
+@if (!Model.Deleted)
+{
+    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-secondary" title="Изменить"><i class="bi bi-pencil"></i></a>
+    <form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="d-inline">
+        <input type="hidden" name="returnUrl" value="@returnUrl" />
+        <button class="btn btn-sm btn-outline-danger" title="В корзину" data-confirm="Переместить «@Model.Name» в корзину?"><i class="bi bi-trash"></i></button>
+    </form>
+}
+else
+{
+    <form asp-action="Restore" asp-route-id="@Model.Id" method="post" class="d-inline">
+        <input type="hidden" name="returnUrl" value="@returnUrl" />
+        <button class="btn btn-sm btn-outline-success" title="Восстановить"><i class="bi bi-arrow-counterclockwise"></i></button>
+    </form>
+    <form asp-action="Delete" asp-route-id="@Model.Id" asp-route-hard="true" method="post" class="d-inline">
+        <input type="hidden" name="returnUrl" value="@returnUrl" />
+        <button class="btn btn-sm btn-danger" title="Удалить навсегда"
+                data-confirm="Удалить «@Model.Name» навсегда? Вернуть будет нельзя."><i class="bi bi-x-octagon"></i></button>
+    </form>
+}

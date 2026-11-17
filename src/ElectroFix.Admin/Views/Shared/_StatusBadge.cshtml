@@ -1,0 +1,17 @@
+@model string
+@* цветная метка статуса заказ-наряда или счёта *@
+@{
+    var css = Model switch
+    {
+        "closed" or "paid" => "bg-success",
+        "cancelled" => "bg-secondary",
+        "ready" or "partially_paid" => "bg-info text-dark",
+        "unpaid" => "bg-warning text-dark",
+        "in_progress" or "assigned" or "pdi" => "bg-primary",
+        _ => "bg-light text-dark border",
+    };
+    var label = Labels.WorkOrderStatuses.ContainsKey(Model)
+        ? Labels.Of(Labels.WorkOrderStatuses, Model)
+        : Labels.Of(Labels.InvoiceStatuses, Model);
+}
+<span class="badge @css">@label</span>

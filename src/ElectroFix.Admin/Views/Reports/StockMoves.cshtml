@@ -1,0 +1,58 @@
+@model PagedResult<StockMoveDto>
+@{
+    ViewData["Title"] = "Движения склада";
+    ViewData["ReadOnly"] = true;
+    var q = (StockMoveListQuery)ViewBag.Query;
+}
+<form method="get" class="d-flex flex-wrap gap-2 mb-3">
+    <input name="search" value="@q.Search" class="form-control" placeholder="Артикул, запчасть или партия" style="width: 280px" />
+    <select name="moveType" class="form-select w-auto" onchange="this.form.submit()">
+        <option value="">Все движения</option>
+        @foreach (var (code, label) in Labels.MoveTypes)
+        {
+            <option value="@code" selected="@(q.MoveType == code)">@label</option>
+        }
+    </select>
+    <button class="btn btn-outline-secondary"><i class="bi bi-search"></i></button>
+</form>
+<div class="card">
+    <div class="table-responsive">
+    <table class="table table-hover mb-0">
+        <thead>
+        <tr>
+            <th>@Html.SortHeader("moved", "Когда")</th>
+            <th>@Html.SortHeader("type", "Движение")</th>
+            <th>Запчасть</th>
+            <th class="text-end">Кол-во</th>
+            <th>Партия / ячейка</th>
+            <th>Заказ-наряд</th>
+            <th>Кто</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var m in Model.Items)
+        {
+            <tr>
+                <td class="text-nowrap">@HtmlHelpers.Time(m.MovedAt)</td>
+                <td>@Labels.Of(Labels.MoveTypes, m.MoveType)</td>
+                <td><span class="font-monospace">@m.Article</span> @m.PartName</td>
+                <td class="text-end">@HtmlHelpers.Num(m.Quantity)</td>
+                <td>@m.Batch @(m.StorageCell != null ? "/ " + m.StorageCell : "")</td>
+                <td>
+                    @if (m.WorkOrderId != null)
+                    {
+                        <a asp-controller="WorkOrders" asp-action="Details" asp-route-id="@m.WorkOrderId">@m.WorkOrderNumber</a>
+                    }
+                </td>
+                <td>@m.PerformedBy</td>
+            </tr>
+        }
+        @if (Model.Items.Count == 0)
+        {
+            <tr><td colspan="7" class="text-center text-muted py-3">Движений нет</td></tr>
+        }
+        </tbody>
+    </table>
+    </div>
+    <partial name="_Pager" model="new PagerModel(Model.Page, Model.Size, Model.Total)" />
+</div>

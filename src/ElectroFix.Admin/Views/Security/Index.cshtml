@@ -1,0 +1,84 @@
+@model DashboardDto
+@{
+    ViewData["Title"] = "Безопасность";
+    var events = (PagedResult<AuditEntryDto>)ViewBag.Events;
+    var days = Model.SecurityByDay;
+}
+@* попытки входа и доступа за последние 30 дней. Всё это пишет Api в audit_log *@
+<div class="row g-3 mb-3">
+    <div class="col-6 col-lg-3"><div class="card stat p-3"><div class="label">Входов за 30 дней</div><div class="value text-success">@days.Sum(d => d.Logins)</div></div></div>
+    <div class="col-6 col-lg-3"><div class="card stat p-3"><div class="label">Неудачных входов</div><div class="value text-warning">@days.Sum(d => d.Failed)</div></div></div>
+    <div class="col-6 col-lg-3"><div class="card stat p-3"><div class="label">Попыток без прав</div><div class="value text-danger">@days.Sum(d => d.Denied)</div></div></div>
+    <div class="col-6 col-lg-3"><div class="card stat p-3"><div class="label">Запросов на несуществующие адреса</div><div class="value text-secondary">@days.Sum(d => d.NotFound)</div></div></div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-lg-8">
+        <div class="card p-3 h-100">
+            <h2 class="h6">По дням, последние 30 дней</h2>
+            <div class="chart-box" style="height: 300px"><canvas id="securityChart"></canvas></div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <h2 class="h6 p-3 mb-0">Подозрительные IP за 30 дней</h2>
+            <table class="table table-sm mb-0">
+                <thead><tr><th>IP</th><th class="text-end">Попыток</th><th>Последняя</th></tr></thead>
+                <tbody>
+                @foreach (var ip in Model.SuspiciousIps)
+                {
+                    <tr>
+                        <td><a asp-controller="Reports" asp-action="Audit" asp-route-ip="@ip.Ip">@ip.Ip</a></td>
+                        <td class="text-end fw-semibold">@ip.Attempts</td>
+                        <td class="small">@HtmlHelpers.Time(ip.LastAt)</td>
+                    </tr>
+                }
+                @if (Model.SuspiciousIps.Count == 0)
+                {
+                    <tr><td colspan="3" class="text-center text-muted">Ничего подозрительного</td></tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="d-flex justify-content-between align-items-center p-3">
+        <h2 class="h6 mb-0">Последние события безопасности</h2>
+        <a asp-controller="Reports" asp-action="Audit" asp-route-security="true" class="small">Все в журнале аудита →</a>
+    </div>
+    <div class="table-responsive">
+    <table class="table table-sm mb-0">
+        <thead><tr><th>Время</th><th>Событие</th><th>Пользователь</th><th>Что</th><th>IP</th></tr></thead>
+        <tbody>
+        @foreach (var e in events.Items)
+        {
+            <tr>
+                <td class="text-nowrap">@HtmlHelpers.Time(e.CreatedAt)</td>
+                <td><span class="badge bg-danger-subtle text-danger-emphasis">@Labels.Of(Labels.AuditActions, e.Action)</span></td>
+                <td>@(e.UserEmail ?? "—")</td>
+                <td class="small text-muted text-break">@e.AfterData</td>
+                <td>@e.IpAddress</td>
+            </tr>
+        }
+        @if (events.Items.Count == 0)
+        {
+            <tr><td colspan="5" class="text-center text-muted">Событий нет</td></tr>
+        }
+        </tbody>
+    </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        efChart('securityChart', 'line',
+            @Json.Serialize(days.Select(d => d.Day.ToString("dd.MM"))),
+            [{ label: 'Входы', data: @Json.Serialize(days.Select(d => d.Logins)), color: '#16a34a' },
+             { label: 'Неудачные входы', data: @Json.Serialize(days.Select(d => d.Failed)), color: '#f59e0b' },
+             { label: 'Без прав (401/403)', data: @Json.Serialize(days.Select(d => d.Denied)), color: '#dc2626' },
+             { label: 'Нет такого адреса (404)', data: @Json.Serialize(days.Select(d => d.NotFound)), color: '#64748b' }],
+            { scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } });
+    </script>
+}

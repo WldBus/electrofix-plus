@@ -1,0 +1,54 @@
+@model PagedResult<StockBalanceDto>
+@{
+    ViewData["Title"] = "Остатки на складе";
+    ViewData["ReadOnly"] = true;
+    var q = (ListQuery)ViewBag.Query;
+    var belowMin = (IReadOnlyList<PartBelowMinDto>)ViewBag.BelowMin;
+}
+@if (belowMin.Count > 0)
+{
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle"></i> Ниже минимального запаса:
+        @string.Join(", ", belowMin.Select(p => $"{p.Name} (дозаказать {HtmlHelpers.Num(p.ToOrder)})"))
+    </div>
+}
+<form method="get" class="d-flex gap-2 mb-3">
+    <input name="search" value="@q.Search" class="form-control" placeholder="Артикул или наименование" style="width: 280px" />
+    <button class="btn btn-outline-secondary"><i class="bi bi-search"></i></button>
+</form>
+<div class="card">
+    <div class="table-responsive">
+    <table class="table table-hover mb-0">
+        <thead>
+        <tr>
+            <th>@Html.SortHeader("article", "Артикул")</th>
+            <th>@Html.SortHeader("name", "Наименование")</th>
+            <th>Партия</th>
+            <th>Ячейка</th>
+            <th class="text-end">На складе</th>
+            <th class="text-end">В резерве</th>
+            <th class="text-end">@Html.SortHeader("available", "Доступно")</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var b in Model.Items)
+        {
+            <tr>
+                <td class="font-monospace">@b.Article</td>
+                <td>@b.Name</td>
+                <td>@b.Batch</td>
+                <td>@b.StorageCell</td>
+                <td class="text-end">@HtmlHelpers.Num(b.OnHand)</td>
+                <td class="text-end">@HtmlHelpers.Num(b.Reserved)</td>
+                <td class="text-end fw-semibold">@HtmlHelpers.Num(b.Available)</td>
+            </tr>
+        }
+        @if (Model.Items.Count == 0)
+        {
+            <tr><td colspan="7" class="text-center text-muted py-3">Склад пуст</td></tr>
+        }
+        </tbody>
+    </table>
+    </div>
+    <partial name="_Pager" model="new PagerModel(Model.Page, Model.Size, Model.Total)" />
+</div>
