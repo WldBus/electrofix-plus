@@ -480,3 +480,7 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# резервные копии БД: в них персональные данные клиентов
+*.dump
+ElectroFix-backups/
