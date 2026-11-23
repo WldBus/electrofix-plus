@@ -1,24 +1,30 @@
-using System.Diagnostics;
-using ElectroFix.Web.Models;
+using ElectroFix.Shared;
+using ElectroFix.Web.Infrastructure;
+
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ElectroFix.Web.Controllers;
 
-public class HomeController : Controller
+// Главная: открытый прайс работ, без входа
+[AllowAnonymous]
+public class HomeController(ApiClient api) : SiteController
 {
-    public IActionResult Index()
+    public async Task<IActionResult> Index([FromQuery] CatalogListQuery q)
     {
-        return View();
+        q.Deleted = false;
+        q.Size = 15;
+        ViewBag.Query = q;
+        // категории для фильтра беру из полного прайса (он небольшой)
+        ViewBag.Categories = (await api.AllAsync<ServiceDto>("/api/catalog/services"))
+            .Select(s => s.Category).Distinct().Order().ToList();
+        return View(await api.GetAsync<PagedResult<ServiceDto>>("/api/catalog/services" + ListUrl.ToApiQuery(q)));
     }
 
-    public IActionResult Privacy()
-    {
-        return View();
-    }
-
-    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+    // сюда ведёт UseExceptionHandler, если что-то упало в самом сайте
     public IActionResult Error()
     {
-        return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        ViewData["Message"] = "Что-то пошло не так. Попробуйте ещё раз чуть позже.";
+        return View("ApiError");
     }
 }

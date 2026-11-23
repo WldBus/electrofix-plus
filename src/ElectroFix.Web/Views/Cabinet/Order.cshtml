@@ -1,0 +1,7 @@
+@model ElectroFix.Web.Models.OrderPage
+@{
+    ViewData["Title"] = "Ремонт " + Model.Order.Header.WorkOrderNumber;
+    ViewData["HideTitle"] = true;
+}
+<a asp-action="Orders" class="d-inline-block mb-3"><i class="bi bi-arrow-left"></i> Все ремонты</a>
+<partial name="_OrderCard" model="Model" />

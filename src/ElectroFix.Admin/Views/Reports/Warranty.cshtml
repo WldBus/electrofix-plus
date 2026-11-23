@@ -8,9 +8,9 @@
     <input name="search" value="@q.Search" class="form-control" placeholder="Номер заказ-наряда или причина" style="width: 280px" />
     <select name="status" class="form-select w-auto" onchange="this.form.submit()">
         <option value="">Все решения</option>
-        @foreach (var (code, label) in Labels.WarrantyDecisions)
+        @foreach (var (key, label) in Labels.WarrantyDecisions)
         {
-            <option value="@code" selected="@(q.Status == code)">@label</option>
+            <option value="@key" selected="@(q.Status == key)">@label</option>
         }
     </select>
     <button class="btn btn-outline-secondary"><i class="bi bi-search"></i></button>

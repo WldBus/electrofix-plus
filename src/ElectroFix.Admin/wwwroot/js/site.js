@@ -99,3 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+// MVC сам помечает числовые поля обязательными и пишет текст по-английски — подменяю.
+// Выполняется сразу (скрипт в конце страницы), до того как jquery.validate прочитает атрибуты
+document.querySelectorAll('[data-val-required^="The "]').forEach(el => el.dataset.valRequired = 'Заполните поле');

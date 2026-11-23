@@ -1,0 +1,98 @@
+@model ElectroFix.Web.Models.CabinetHomePage
+@{
+    ViewData["Title"] = "Личный кабинет";
+    var p = Model.Profile;
+}
+<div class="row g-3 mb-4">
+    <div class="col-lg-4">
+        <div class="card p-3 h-100">
+            <div class="d-flex align-items-center gap-3 mb-2">
+                <i class="bi bi-person-circle fs-1 text-primary"></i>
+                <div>
+                    <div class="fw-semibold">@p.DisplayName</div>
+                    <div class="small text-muted">@Labels.Of(Labels.ClientTypes, p.ClientType)</div>
+                </div>
+            </div>
+            <div class="small"><i class="bi bi-telephone"></i> @p.Phone</div>
+            <div class="small"><i class="bi bi-envelope"></i> @(p.Email ?? "–")</div>
+            <div class="small"><i class="bi bi-phone"></i> Устройств: @p.DevicesCount</div>
+            <a asp-action="Book" class="btn btn-warning mt-3"><i class="bi bi-calendar-plus"></i> Записаться на ремонт</a>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="row g-3">
+            <div class="col-6 col-md-4"><div class="card p-3 stat"><div class="value">@Model.Active.Count</div><div class="label">ремонтов в работе</div></div></div>
+            <div class="col-6 col-md-4"><div class="card p-3 stat"><div class="value text-warning">@Model.WaitingDecision.Count</div><div class="label">смет ждут вас</div></div></div>
+            <div class="col-12 col-md-4"><div class="card p-3 stat"><div class="value @(Model.WithDebt.Count > 0 ? "text-danger" : "")">@Model.WithDebt.Count</div><div class="label">счетов к оплате</div></div></div>
+        </div>
+        @foreach (var o in Model.WaitingDecision)
+        {
+            <div class="alert alert-warning d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3 mb-0">
+                <span><i class="bi bi-exclamation-circle"></i> Смета по заказ-наряду <b>@o.WorkOrderNumber</b> (@o.Device) ждёт вашего решения</span>
+                <a asp-action="Order" asp-route-id="@o.WorkOrderId" class="btn btn-sm btn-warning">Посмотреть смету</a>
+            </div>
+        }
+        @foreach (var o in Model.WithDebt)
+        {
+            <div class="alert alert-light border d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3 mb-0">
+                <span><i class="bi bi-receipt"></i> Счёт @o.InvoiceNumber по @o.WorkOrderNumber — @Labels.Of(Labels.InvoiceStatuses, o.InvoiceStatus).ToLower(). Оплата в филиале.</span>
+                <a asp-action="Order" asp-route-id="@o.WorkOrderId" class="btn btn-sm btn-outline-secondary">Подробнее</a>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="d-flex justify-content-between align-items-center p-3 pb-2">
+                <h2 class="h5 mb-0">Ближайшие записи</h2>
+                <a asp-action="Checkins" class="small">Все записи</a>
+            </div>
+            @if (Model.Upcoming.Count == 0)
+            {
+                <div class="p-3 text-muted">Записей нет. <a asp-action="Book">Записаться</a></div>
+            }
+            else
+            {
+                <ul class="list-group list-group-flush">
+                    @foreach (var c in Model.Upcoming)
+                    {
+                        <li class="list-group-item">
+                            <div class="d-flex justify-content-between gap-2">
+                                <b>@HtmlHelpers.Time(c.SlotStart)</b> @HtmlHelpers.Status(Labels.CheckinStatuses, c.Status)
+                            </div>
+                            <div class="small text-muted">@c.Device · @c.Branch</div>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="d-flex justify-content-between align-items-center p-3 pb-2">
+                <h2 class="h5 mb-0">Ремонты в работе</h2>
+                <a asp-action="Orders" class="small">Все ремонты</a>
+            </div>
+            @if (Model.Active.Count == 0)
+            {
+                <div class="p-3 text-muted">Сейчас ничего не ремонтируется.</div>
+            }
+            else
+            {
+                <ul class="list-group list-group-flush">
+                    @foreach (var o in Model.Active)
+                    {
+                        <li class="list-group-item">
+                            <div class="d-flex justify-content-between gap-2">
+                                <a asp-action="Order" asp-route-id="@o.WorkOrderId">@o.WorkOrderNumber</a> @HtmlHelpers.Status(Labels.WorkOrderStatuses, o.Status)
+                            </div>
+                            <div class="small text-muted">@o.Device · @o.Branch</div>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+</div>

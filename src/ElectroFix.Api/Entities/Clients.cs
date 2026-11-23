@@ -11,6 +11,9 @@ public class Client : ISoftDeletable
     public string? Email { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? DeletedAt { get; set; }
+
+    // учётка клиента на сайте (личный кабинет), может и не быть
+    public int? UserId { get; set; }
     public List<Device> Devices { get; set; } = [];
 }
 

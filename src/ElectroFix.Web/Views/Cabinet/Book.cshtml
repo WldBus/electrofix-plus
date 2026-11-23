@@ -1,0 +1,9 @@
+@model ElectroFix.Web.Models.BookPage
+@{
+    ViewData["Title"] = "Запись на ремонт";
+    ViewData["DeviceAction"] = "Devices";
+}
+<partial name="_BookForm" model="Model" view-data="ViewData" />
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

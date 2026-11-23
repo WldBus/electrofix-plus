@@ -1,0 +1,62 @@
+@model PagedResult<CheckinDto>
+@{
+    ViewData["Title"] = "Мои записи";
+    var q = (StatusListQuery)ViewBag.Query;
+}
+<div class="card">
+    <form method="get" class="d-flex flex-wrap gap-2 p-3 border-bottom">
+        <select name="status" class="form-select w-auto" data-autosubmit aria-label="Статус">
+            <option value="">Все статусы</option>
+            @foreach (var (key, label) in Labels.CheckinStatuses)
+            {
+                <option value="@key" selected="@(key == q.Status)">@label</option>
+            }
+        </select>
+        <input type="hidden" name="sort" value="@q.Sort" />
+        <a asp-action="Book" class="btn btn-warning ms-auto"><i class="bi bi-calendar-plus"></i> Записаться</a>
+    </form>
+    @if (Model.Items.Count == 0)
+    {
+        <div class="p-4 text-center text-muted"><i class="bi bi-calendar fs-2 d-block"></i>Записей нет.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th>@Html.SortHeader("slot", "Когда")</th>
+                    <th>Устройство</th>
+                    <th class="d-none d-md-table-cell">Филиал</th>
+                    <th>@Html.SortHeader("status", "Статус")</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var c in Model.Items)
+                {
+                    <tr>
+                        <td class="text-nowrap">@HtmlHelpers.Time(c.SlotStart)</td>
+                        <td>@c.Device<div class="small text-muted">@c.Defects</div></td>
+                        <td class="d-none d-md-table-cell">@c.Branch</td>
+                        <td>@HtmlHelpers.Status(Labels.CheckinStatuses, c.Status)</td>
+                        <td class="text-end text-nowrap">
+                            @if (c.Status is "booked" or "confirmed")
+                            {
+                                <form asp-action="Cancel" asp-route-id="@c.CheckinId" method="post">
+                                    <button class="btn btn-sm btn-outline-danger" data-confirm="Отменить запись?">Отменить</button>
+                                </form>
+                            }
+                            else if (c.WorkOrderId != null)
+                            {
+                                <a asp-action="Order" asp-route-id="@c.WorkOrderId" class="btn btn-sm btn-outline-primary">Ремонт</a>
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+    <partial name="_Pager" model="new PagerModel(Model.Page, Model.Size, Model.Total)" />
+</div>

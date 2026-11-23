@@ -1,0 +1,78 @@
+@model PagedResult<WorkOrderDto>
+@* Список заказ-нарядов с поиском, фильтром по статусу, сортировкой и страницами в адресе.
+   Его видят клиент (свои), приёмщик (все) и мастер (свои) *@
+@{
+    var q = (WorkOrderListQuery)ViewBag.Query;
+    var linkController = ViewData["OrderController"] as string ?? ViewContext.RouteData.Values["controller"]!.ToString();
+    var linkAction = (string)ViewData["OrderLink"]!;
+    var staff = linkController == "Orders";
+}
+<div class="card">
+    <form method="get" class="row g-2 p-3 border-bottom">
+        <div class="col-12 col-md-5">
+            <input name="search" value="@q.Search" class="form-control" placeholder="Номер, устройство@(staff ? ", клиент" : "")" />
+        </div>
+        <div class="col-8 col-md-4">
+            <select name="status" class="form-select" data-autosubmit aria-label="Статус">
+                <option value="">Все статусы</option>
+                @foreach (var (key, label) in Labels.WorkOrderStatuses)
+                {
+                    <option value="@key" selected="@(key == q.Status)">@label</option>
+                }
+            </select>
+        </div>
+        <input type="hidden" name="sort" value="@q.Sort" />
+        <div class="col-4 col-md-3 d-flex gap-2">
+            <button class="btn btn-primary flex-grow-1"><i class="bi bi-search"></i><span class="d-none d-sm-inline"> Найти</span></button>
+            @if (!string.IsNullOrEmpty(q.Search) || !string.IsNullOrEmpty(q.Status))
+            {
+                <a href="@Context.Request.Path" class="btn btn-outline-secondary" title="Сбросить"><i class="bi bi-x-lg"></i></a>
+            }
+        </div>
+    </form>
+    @if (Model.Items.Count == 0)
+    {
+        <div class="p-4 text-center text-muted"><i class="bi bi-clipboard fs-2 d-block"></i>Заказ-нарядов не найдено.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th>@Html.SortHeader("number", "Номер")</th>
+                    <th class="d-none d-md-table-cell">@Html.SortHeader("opened", "Открыт")</th>
+                    <th>Устройство</th>
+                    @if (staff)
+                    {
+                        <th class="d-none d-lg-table-cell">@Html.SortHeader("client", "Клиент")</th>
+                        <th class="d-none d-lg-table-cell">Мастер</th>
+                    }
+                    <th>@Html.SortHeader("status", "Статус")</th>
+                    <th class="text-end d-none d-sm-table-cell">@Html.SortHeader("total", "Сумма")</th>
+                    <th class="d-none d-md-table-cell">Счёт</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var w in Model.Items)
+                {
+                    <tr>
+                        <td class="text-nowrap"><a asp-controller="@linkController" asp-action="@linkAction" asp-route-id="@w.WorkOrderId">@w.WorkOrderNumber</a></td>
+                        <td class="d-none d-md-table-cell text-nowrap">@HtmlHelpers.Day(w.OpenedAt)</td>
+                        <td>@w.Device<div class="small text-muted">@w.Branch</div></td>
+                        @if (staff)
+                        {
+                            <td class="d-none d-lg-table-cell">@w.Client</td>
+                            <td class="d-none d-lg-table-cell">@(w.Master ?? "–")</td>
+                        }
+                        <td>@HtmlHelpers.Status(Labels.WorkOrderStatuses, w.Status)</td>
+                        <td class="text-end text-nowrap d-none d-sm-table-cell">@HtmlHelpers.Money(w.TotalAmount)</td>
+                        <td class="d-none d-md-table-cell">@HtmlHelpers.Status(Labels.InvoiceStatuses, w.InvoiceStatus)</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+    <partial name="_Pager" model="new PagerModel(Model.Page, Model.Size, Model.Total)" />
+</div>

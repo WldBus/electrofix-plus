@@ -1,0 +1,88 @@
+@model PagedResult<CheckinDto>
+@{
+    ViewData["Title"] = "Записи на приём";
+    var q = (StatusListQuery)ViewBag.Query;
+    var back = Context.Request.Path + Context.Request.QueryString;
+}
+<div class="card">
+    <form method="get" class="row g-2 p-3 border-bottom">
+        <div class="col-12 col-md-4">
+            <input name="search" value="@q.Search" class="form-control" placeholder="Клиент, серийный номер, филиал" />
+        </div>
+        <div class="col-7 col-md-3">
+            <select name="status" class="form-select" data-autosubmit aria-label="Статус">
+                <option value="">Все статусы</option>
+                @foreach (var (key, label) in Labels.CheckinStatuses)
+                {
+                    <option value="@key" selected="@(key == q.Status)">@label</option>
+                }
+            </select>
+        </div>
+        <input type="hidden" name="sort" value="@q.Sort" />
+        <div class="col-5 col-md-2"><button class="btn btn-primary w-100"><i class="bi bi-search"></i> Найти</button></div>
+        <div class="col-12 col-md-3 text-md-end">
+            <a asp-action="Clients" class="btn btn-warning w-100"><i class="bi bi-calendar-plus"></i> Записать клиента</a>
+        </div>
+    </form>
+    @if (Model.Items.Count == 0)
+    {
+        <div class="p-4 text-center text-muted"><i class="bi bi-calendar fs-2 d-block"></i>Записей не найдено.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th>@Html.SortHeader("slot", "Когда")</th>
+                    <th>Клиент и устройство</th>
+                    <th class="d-none d-lg-table-cell">Неисправность</th>
+                    <th class="d-none d-md-table-cell">@Html.SortHeader("priority", "Приоритет")</th>
+                    <th>@Html.SortHeader("status", "Статус")</th>
+                    <th class="text-end">Действия</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var c in Model.Items)
+                {
+                    <tr>
+                        <td class="text-nowrap">@HtmlHelpers.Time(c.SlotStart)<div class="small text-muted">@c.Branch</div></td>
+                        <td>@c.ClientName<div class="small text-muted">@c.Device</div></td>
+                        <td class="d-none d-lg-table-cell small">@c.Defects</td>
+                        <td class="d-none d-md-table-cell">@Labels.Of(Labels.Priorities, c.Priority)</td>
+                        <td>@HtmlHelpers.Status(Labels.CheckinStatuses, c.Status)</td>
+                        <td class="text-end">
+                            <div class="d-flex flex-wrap justify-content-end gap-1">
+                                @if (c.Status == "booked")
+                                {
+                                    <form asp-action="CheckinStatus" asp-route-id="@c.CheckinId" asp-route-status="confirmed" asp-route-returnUrl="@back" method="post">
+                                        <button class="btn btn-sm btn-outline-success">Подтвердить</button>
+                                    </form>
+                                }
+                                @if (c.Status == "confirmed")
+                                {
+                                    <a asp-action="Open" asp-route-id="@c.CheckinId" class="btn btn-sm btn-success"><i class="bi bi-box-arrow-in-down"></i> Принять</a>
+                                }
+                                @if (c.Status is "booked" or "confirmed")
+                                {
+                                    <form asp-action="CheckinStatus" asp-route-id="@c.CheckinId" asp-route-status="no_show" asp-route-returnUrl="@back" method="post">
+                                        <button class="btn btn-sm btn-outline-secondary" data-confirm="Отметить неявку?">Неявка</button>
+                                    </form>
+                                    <form asp-action="CheckinStatus" asp-route-id="@c.CheckinId" asp-route-status="cancelled" asp-route-returnUrl="@back" method="post">
+                                        <button class="btn btn-sm btn-outline-danger" data-confirm="Отменить запись?">Отменить</button>
+                                    </form>
+                                }
+                                @if (c.WorkOrderId != null)
+                                {
+                                    <a asp-controller="Orders" asp-action="Details" asp-route-id="@c.WorkOrderId" class="btn btn-sm btn-outline-primary">Заказ-наряд</a>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+    <partial name="_Pager" model="new PagerModel(Model.Page, Model.Size, Model.Total)" />
+</div>

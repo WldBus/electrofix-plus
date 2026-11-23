@@ -8,9 +8,9 @@
     <input name="search" value="@q.Search" class="form-control" placeholder="Артикул, запчасть или партия" style="width: 280px" />
     <select name="moveType" class="form-select w-auto" onchange="this.form.submit()">
         <option value="">Все движения</option>
-        @foreach (var (code, label) in Labels.MoveTypes)
+        @foreach (var (key, label) in Labels.MoveTypes)
         {
-            <option value="@code" selected="@(q.MoveType == code)">@label</option>
+            <option value="@key" selected="@(q.MoveType == key)">@label</option>
         }
     </select>
     <button class="btn btn-outline-secondary"><i class="bi bi-search"></i></button>

@@ -1,50 +1,106 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+﻿@using System.Security.Claims
+@{
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString();
+    var action = ViewContext.RouteData.Values["action"]?.ToString();
+    string Active(string c, string? a = null) =>
+        controller == c && (a == null || action == a) ? "active" : "";
+    var role = User.FindFirstValue(ClaimTypes.Role);
+}
+<!DOCTYPE html>
+<html lang="ru">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - ElectroFix.Web</title>
-    <script type="importmap"></script>
+    <title>@ViewData["Title"] – ElectroFix+</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/ElectroFix.Web.styles.css" asp-append-version="true" />
 </head>
-<body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">ElectroFix.Web</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </nav>
-    </header>
+<body class="d-flex flex-column min-vh-100">
+<div id="ef-loading" class="ef-loading" hidden></div>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
-
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - ElectroFix.Web - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+        <a class="navbar-brand" asp-controller="Home" asp-action="Index"><i class="bi bi-lightning-charge-fill text-warning"></i> ElectroFix+</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-label="Меню">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="mainNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item"><a class="nav-link @Active("Home")" asp-controller="Home" asp-action="Index">Цены</a></li>
+                @* меню зависит от роли: каждый видит только своё рабочее место *@
+                @switch (role)
+                {
+                    case RoleCodes.Client:
+                        <li class="nav-item"><a class="nav-link @Active("Cabinet", "Index")" asp-controller="Cabinet" asp-action="Index">Кабинет</a></li>
+                        <li class="nav-item"><a class="nav-link @Active("Cabinet", "Devices")" asp-controller="Cabinet" asp-action="Devices">Мои устройства</a></li>
+                        <li class="nav-item"><a class="nav-link @Active("Cabinet", "Checkins")" asp-controller="Cabinet" asp-action="Checkins">Записи</a></li>
+                        <li class="nav-item"><a class="nav-link @Active("Cabinet", "Orders")" asp-controller="Cabinet" asp-action="Orders">Ремонты</a></li>
+                        break;
+                    case RoleCodes.Receptionist:
+                        <li class="nav-item"><a class="nav-link @Active("Reception", "Index")" asp-controller="Reception" asp-action="Index">Записи</a></li>
+                        <li class="nav-item"><a class="nav-link @Active("Reception", "Clients")" asp-controller="Reception" asp-action="Clients">Клиенты</a></li>
+                        <li class="nav-item"><a class="nav-link @Active("Reception", "Orders")" asp-controller="Reception" asp-action="Orders">Заказ-наряды</a></li>
+                        break;
+                    case RoleCodes.Master:
+                        <li class="nav-item"><a class="nav-link @Active("Master")" asp-controller="Master" asp-action="Index">Мои заказ-наряды</a></li>
+                        break;
+                    case RoleCodes.Purchaser:
+                        <li class="nav-item"><a class="nav-link @Active("Warehouse", "Index")" asp-controller="Warehouse" asp-action="Index">К выдаче</a></li>
+                        <li class="nav-item"><a class="nav-link @Active("Warehouse", "Receipt")" asp-controller="Warehouse" asp-action="Receipt">Приход</a></li>
+                        <li class="nav-item"><a class="nav-link @Active("Warehouse", "Stock")" asp-controller="Warehouse" asp-action="Stock">Остатки</a></li>
+                        <li class="nav-item"><a class="nav-link @Active("Warehouse", "Moves")" asp-controller="Warehouse" asp-action="Moves">Движения</a></li>
+                        break;
+                }
+            </ul>
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <div class="d-flex align-items-center gap-2 text-white-50 small">
+                    <i class="bi bi-person-circle"></i> <span class="text-white">@User.Identity.Name</span>
+                    <form asp-controller="Account" asp-action="Logout" method="post" class="ms-2">
+                        <button class="btn btn-sm btn-outline-light"><i class="bi bi-box-arrow-right"></i> Выйти</button>
+                    </form>
+                </div>
+            }
+            else
+            {
+                <div class="d-flex gap-2">
+                    <a class="btn btn-sm btn-outline-light" asp-controller="Account" asp-action="Login">Войти</a>
+                    <a class="btn btn-sm btn-warning" asp-controller="Account" asp-action="Register">Регистрация</a>
+                </div>
+            }
         </div>
-    </footer>
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
-    @await RenderSectionAsync("Scripts", required: false)
+    </div>
+</nav>
+<main class="container py-4 flex-grow-1">
+    @if (ViewData["Title"] is string title && ViewData["HideTitle"] is not true)
+    {
+        <h1 class="h3 mb-4">@title</h1>
+    }
+    @if (TempData["Success"] is string ok)
+    {
+        <div class="alert alert-success alert-dismissible fade show">@ok
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button></div>
+    }
+    @if (TempData["Error"] is string err)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">@err
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button></div>
+    }
+    @if (TempData["Info"] is string info)
+    {
+        <div class="alert alert-info alert-dismissible fade show">@info
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button></div>
+    }
+    @RenderBody()
+</main>
+<footer class="border-top bg-white py-3 small text-muted">
+    <div class="container d-flex flex-wrap justify-content-between gap-2">
+        <span>© ElectroFix+ — ремонт бытовой техники и электроники</span>
+        <span><i class="bi bi-geo-alt"></i> @string.Join(" · ", Branches.All) · <i class="bi bi-telephone"></i> +7 495 000-00-00</span>
+    </div>
+</footer>
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/site.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

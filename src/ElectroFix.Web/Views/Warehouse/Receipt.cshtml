@@ -1,0 +1,41 @@
+@model ElectroFix.Web.Models.ReceiptPage
+@{
+    ViewData["Title"] = "Приход на склад";
+}
+<div class="card p-3 p-md-4" style="max-width: 640px">
+    <form asp-action="Receipt" method="post">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2"></div>
+        <div class="mb-3">
+            <label asp-for="Form.PartId" class="form-label">Запчасть</label>
+            <select asp-for="Form.PartId" class="form-select">
+                <option value="0">— выберите —</option>
+                @foreach (var p in Model.Parts)
+                {
+                    <option value="@p.PartId">@p.Name (@p.Article, @p.Unit)</option>
+                }
+            </select>
+            <span asp-validation-for="Form.PartId" class="text-danger small"></span>
+        </div>
+        <div class="row g-3">
+            <div class="col-sm-4">
+                <label asp-for="Form.Quantity" class="form-label">Количество</label>
+                <input asp-for="Form.Quantity" type="number" class="form-control" min="0.01" step="0.01" />
+                <span asp-validation-for="Form.Quantity" class="text-danger small"></span>
+            </div>
+            <div class="col-sm-4">
+                <label asp-for="Form.Batch" class="form-label">Партия</label>
+                <input asp-for="Form.Batch" class="form-control" placeholder="B-2026-11" />
+                <span asp-validation-for="Form.Batch" class="text-danger small"></span>
+            </div>
+            <div class="col-sm-4">
+                <label asp-for="Form.StorageCell" class="form-label">Ячейка</label>
+                <input asp-for="Form.StorageCell" class="form-control" placeholder="A-01-01" />
+                <span asp-validation-for="Form.StorageCell" class="text-danger small"></span>
+            </div>
+        </div>
+        <button class="btn btn-primary mt-4"><i class="bi bi-box-arrow-in-down"></i> Оприходовать</button>
+    </form>
+</div>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

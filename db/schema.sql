@@ -1235,3 +1235,48 @@ BEGIN
 END $EF$;
 COMMIT;
 
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261117165633_ClientAccounts') THEN
+    ALTER TABLE clients ADD user_id integer;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261117165633_ClientAccounts') THEN
+    CREATE UNIQUE INDEX ix_clients_user_id ON clients (user_id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261117165633_ClientAccounts') THEN
+    ALTER TABLE clients ADD CONSTRAINT fk_clients_user FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE SET NULL;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261117165633_ClientAccounts') THEN
+    UPDATE clients c
+       SET user_id = u.user_id
+      FROM users u
+      JOIN roles r ON r.role_id = u.role_id AND r.code = 'client'
+     WHERE c.user_id IS NULL
+       AND lower(c.email) = u.email
+       AND NOT EXISTS (SELECT 1 FROM clients x WHERE x.user_id = u.user_id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261117165633_ClientAccounts') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261117165633_ClientAccounts', '10.0.15');
+    END IF;
+END $EF$;
+COMMIT;
+

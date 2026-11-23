@@ -224,12 +224,20 @@ namespace ElectroFix.Api.Data.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("phone");
 
+                    b.Property<int?>("UserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_id");
+
                     b.HasKey("ClientId")
                         .HasName("pk_clients");
 
                     b.HasIndex(new[] { "Inn" }, "uq_clients_inn")
                         .IsUnique()
                         .HasDatabaseName("ix_clients_inn");
+
+                    b.HasIndex(new[] { "UserId" }, "uq_clients_user")
+                        .IsUnique()
+                        .HasDatabaseName("ix_clients_user_id");
 
                     b.ToTable("clients", (string)null);
                 });
@@ -1198,6 +1206,15 @@ namespace ElectroFix.Api.Data.Migrations
                     b.Navigation("Device");
 
                     b.Navigation("Receptionist");
+                });
+
+            modelBuilder.Entity("ElectroFix.Api.Entities.Client", b =>
+                {
+                    b.HasOne("ElectroFix.Api.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_clients_user");
                 });
 
             modelBuilder.Entity("ElectroFix.Api.Entities.Device", b =>

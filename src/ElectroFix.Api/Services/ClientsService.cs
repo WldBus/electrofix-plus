@@ -60,7 +60,7 @@ public class ClientsService(AppDbContext db)
             throw ApiException.Field(nameof(r.Inn), "ИНН физического лица — 12 цифр");
         }
 
-        var id = await CallAsync<int>(
+        var id = await db.CallAsync<int>(
             "CALL sp_client_add(@type, @name, @phone, @inn, @address, @email, NULL)",
             ("type", r.ClientType), ("name", r.DisplayName), ("phone", r.Phone),
             ("inn", r.Inn), ("address", r.Address), ("email", r.Email));
@@ -74,7 +74,7 @@ public class ClientsService(AppDbContext db)
                        ?? throw ApiException.NotFound("Клиент");
         // админ видит ФИО клиента скрытым; если он его не менял, отправляю в процедуру настоящее
         var name = r.DisplayName.Trim() == PersonalData.MaskName(realName) ? realName : r.DisplayName;
-        await CallAsync<object>("CALL sp_client_update(@id, @name, @phone, @address, @email)",
+        await db.CallAsync<object>("CALL sp_client_update(@id, @name, @phone, @address, @email)",
             ("id", id), ("name", name), ("phone", r.Phone), ("address", r.Address), ("email", r.Email));
         return await GetAsync(id);
     }
@@ -90,27 +90,6 @@ public class ClientsService(AppDbContext db)
         {
             throw ApiException.NotFound("Клиент");
         }
-        await CallAsync<object>("CALL sp_client_delete(@id)", ("id", id));
-    }
-
-    // вызов процедуры с параметрами; INOUT-параметр процедура возвращает первой колонкой
-    private async Task<T?> CallAsync<T>(string sql, params (string Name, object? Value)[] args)
-    {
-        var connection = (NpgsqlConnection)db.Database.GetDbConnection();
-        await db.Database.OpenConnectionAsync();
-        try
-        {
-            await using var command = new NpgsqlCommand(sql, connection);
-            foreach (var (name, value) in args)
-            {
-                command.Parameters.AddWithValue(name, value ?? DBNull.Value);
-            }
-            var result = await command.ExecuteScalarAsync();
-            return result is T typed ? typed : default;
-        }
-        finally
-        {
-            await db.Database.CloseConnectionAsync();
-        }
+        await db.CallAsync<object>("CALL sp_client_delete(@id)", ("id", id));
     }
 }

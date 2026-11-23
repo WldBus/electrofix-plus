@@ -1,0 +1,42 @@
+@model ElectroFix.Web.Models.DevicesPage
+@{
+    ViewData["Title"] = "Мои устройства";
+}
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card">
+            @if (Model.Devices.Count == 0)
+            {
+                <div class="p-4 text-center text-muted"><i class="bi bi-phone fs-2 d-block"></i>Устройств пока нет. Добавьте первое — форма рядом.</div>
+            }
+            else
+            {
+                <ul class="list-group list-group-flush">
+                    @foreach (var d in Model.Devices)
+                    {
+                        <li class="list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <div>
+                                <div class="fw-semibold">@d.Type @d.Brand @d.Model</div>
+                                <div class="small text-muted">SN @d.SerialNumber@(d.ManufactureYear != null ? $" · {d.ManufactureYear} г." : "")@(d.InventoryNumber != null ? $" · инв. {d.InventoryNumber}" : "")</div>
+                            </div>
+                            <a asp-action="Book" asp-route-deviceId="@d.DeviceId" class="btn btn-sm btn-outline-primary"><i class="bi bi-calendar-plus"></i> В ремонт</a>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card p-3 p-md-4">
+            <h2 class="h5 mb-3"><i class="bi bi-plus-circle"></i> Добавить устройство</h2>
+            <form asp-action="Devices" method="post">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2"></div>
+                <partial name="_DeviceFields" for="NewDevice" />
+                <button class="btn btn-primary mt-3">Добавить</button>
+            </form>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

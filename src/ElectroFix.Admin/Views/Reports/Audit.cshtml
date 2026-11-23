@@ -24,9 +24,9 @@
             <label class="form-label small mb-1">Действие</label>
             <select name="action" class="form-select form-select-sm">
                 <option value="">Все</option>
-                @foreach (var (code, label) in Labels.AuditActions)
+                @foreach (var (key, label) in Labels.AuditActions)
                 {
-                    <option value="@code" selected="@(q.Action == code)">@label</option>
+                    <option value="@key" selected="@(q.Action == key)">@label</option>
                 }
             </select>
         </div>
@@ -34,9 +34,9 @@
             <label class="form-label small mb-1">Таблица</label>
             <select name="table" class="form-select form-select-sm">
                 <option value="">Все</option>
-                @foreach (var (code, label) in Labels.AuditTables)
+                @foreach (var (key, label) in Labels.AuditTables)
                 {
-                    <option value="@code" selected="@(q.Table == code)">@label</option>
+                    <option value="@key" selected="@(q.Table == key)">@label</option>
                 }
             </select>
         </div>

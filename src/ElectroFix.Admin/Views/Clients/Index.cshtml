@@ -13,9 +13,9 @@
         <input name="search" value="@q.Search" class="form-control" placeholder="Наименование, телефон или ИНН" style="width: 280px" />
         <select name="clientType" class="form-select w-auto" onchange="this.form.submit()">
             <option value="">Все типы</option>
-            @foreach (var (code, label) in Labels.ClientTypes)
+            @foreach (var (key, label) in Labels.ClientTypes)
             {
-                <option value="@code" selected="@(q.ClientType == code)">@label</option>
+                <option value="@key" selected="@(q.ClientType == key)">@label</option>
             }
         </select>
         <button class="btn btn-outline-secondary"><i class="bi bi-search"></i></button>

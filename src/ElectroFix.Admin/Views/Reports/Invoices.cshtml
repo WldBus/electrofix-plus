@@ -8,9 +8,9 @@
     <input name="search" value="@q.Search" class="form-control" placeholder="Номер счёта, заказ-наряда или клиент" style="width: 300px" />
     <select name="status" class="form-select w-auto" onchange="this.form.submit()">
         <option value="">Все статусы</option>
-        @foreach (var (code, label) in Labels.InvoiceStatuses)
+        @foreach (var (key, label) in Labels.InvoiceStatuses)
         {
-            <option value="@code" selected="@(q.Status == code)">@label</option>
+            <option value="@key" selected="@(q.Status == key)">@label</option>
         }
     </select>
     <button class="btn btn-outline-secondary"><i class="bi bi-search"></i></button>

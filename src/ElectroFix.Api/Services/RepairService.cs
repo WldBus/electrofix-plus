@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ElectroFix.Api.Services;
 
-// Устройства, записи на приём, заказ-наряды и гарантия — пока только чтение.
+// Устройства, записи на приём, заказ-наряды и гарантия — чтение (операции в WorkflowService).
 // Везде IgnoreQueryFilters(): история должна показываться целиком,
 // даже если клиент, работа или сотрудник уже лежат в корзине
 public class RepairService(AppDbContext db)
@@ -84,9 +84,13 @@ public class RepairService(AppDbContext db)
         await db.Devices.IgnoreQueryFilters().Where(d => d.DeviceId == id).Select(DeviceToDto).SingleOrDefaultAsync()
         ?? throw ApiException.NotFound("Устройство");
 
-    public Task<PagedResult<CheckinDto>> ListCheckinsAsync(StatusListQuery q)
+    public Task<PagedResult<CheckinDto>> ListCheckinsAsync(StatusListQuery q, int? clientId = null)
     {
         var query = db.Checkins.IgnoreQueryFilters();
+        if (clientId != null)
+        {
+            query = query.Where(c => c.Device!.ClientId == clientId);
+        }
         if (q.Search.Like() is { } like)
         {
             query = query.Where(c => EF.Functions.ILike(c.Device!.Client!.DisplayName, like)

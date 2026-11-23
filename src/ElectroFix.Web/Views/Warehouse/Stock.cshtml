@@ -1,0 +1,79 @@
+@model PagedResult<StockBalanceDto>
+@using ElectroFix.Web.Models
+@{
+    ViewData["Title"] = "Остатки на складе";
+    var q = (ListQuery)ViewBag.Query;
+    var belowMin = (List<BelowMinItem>)ViewBag.BelowMin;
+}
+@if (belowMin.Count > 0)
+{
+    <div class="card border-start border-danger border-4 mb-4">
+        <div class="p-3 pb-2"><h2 class="h6 mb-0 text-danger"><i class="bi bi-exclamation-triangle"></i> Ниже минимального запаса: @belowMin.Count</h2></div>
+        <div class="table-responsive">
+            <table class="table table-sm mb-0">
+                <thead class="table-light"><tr><th>Запчасть</th><th class="text-end">Доступно</th><th class="text-end">Минимум</th><th></th></tr></thead>
+                <tbody>
+                @foreach (var b in belowMin)
+                {
+                    <tr>
+                        <td>@b.Part.Name <span class="small text-muted">@b.Part.Article</span></td>
+                        <td class="text-end text-danger">@HtmlHelpers.Num(b.Available) @b.Part.Unit</td>
+                        <td class="text-end">@b.Part.MinStock</td>
+                        <td class="text-end"><a asp-action="Receipt" asp-route-partId="@b.Part.PartId" class="btn btn-sm btn-outline-primary">Приход</a></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+<div class="card">
+    <form method="get" class="d-flex flex-wrap gap-2 p-3 border-bottom">
+        <input name="search" value="@q.Search" class="form-control" style="max-width: 24rem" placeholder="Артикул, название, партия, ячейка" />
+        <input type="hidden" name="sort" value="@q.Sort" />
+        <button class="btn btn-primary"><i class="bi bi-search"></i> Найти</button>
+        @if (!string.IsNullOrEmpty(q.Search))
+        {
+            <a asp-action="Stock" class="btn btn-outline-secondary" title="Сбросить"><i class="bi bi-x-lg"></i></a>
+        }
+        <a asp-action="Receipt" class="btn btn-outline-primary ms-auto"><i class="bi bi-plus-lg"></i> Приход</a>
+    </form>
+    @if (Model.Items.Count == 0)
+    {
+        <div class="p-4 text-center text-muted"><i class="bi bi-box-seam fs-2 d-block"></i>Ничего не найдено.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th>@Html.SortHeader("article", "Артикул")</th>
+                    <th>@Html.SortHeader("name", "Запчасть")</th>
+                    <th>Партия</th>
+                    <th>Ячейка</th>
+                    <th class="text-end d-none d-sm-table-cell">На складе</th>
+                    <th class="text-end d-none d-sm-table-cell">В резерве</th>
+                    <th class="text-end">@Html.SortHeader("available", "Доступно")</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var s in Model.Items)
+                {
+                    <tr>
+                        <td class="text-nowrap">@s.Article</td>
+                        <td>@s.Name</td>
+                        <td class="text-nowrap">@s.Batch</td>
+                        <td>@(s.StorageCell ?? "–")</td>
+                        <td class="text-end d-none d-sm-table-cell">@HtmlHelpers.Num(s.OnHand)</td>
+                        <td class="text-end d-none d-sm-table-cell">@HtmlHelpers.Num(s.Reserved)</td>
+                        <td class="text-end fw-semibold">@HtmlHelpers.Num(s.Available)</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+    <partial name="_Pager" model="new PagerModel(Model.Page, Model.Size, Model.Total)" />
+</div>

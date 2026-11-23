@@ -34,6 +34,9 @@ public class ErrorMiddleware(RequestDelegate next, ILogger<ErrorMiddleware> logg
         ["uq_parts_article"] = "Запчасть с таким артикулом уже есть (возможно, в корзине)",
         ["uq_services_name"] = "Такая работа в этой категории уже есть (возможно, в корзине)",
         ["uq_devices_serial"] = "Устройство с таким серийным номером уже есть",
+        ["uq_os_line"] = "Эта работа уже есть в смете",
+        ["uq_op_line"] = "Эта запчасть с этой партией уже есть в смете",
+        ["ix_clients_user_id"] = "Эта учётная запись уже привязана к другому клиенту",
     };
 
     public async Task InvokeAsync(HttpContext context)

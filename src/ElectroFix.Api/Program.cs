@@ -103,6 +103,8 @@ builder.Services.AddScoped<RepairService>();
 builder.Services.AddScoped<FinanceService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<SecurityLog>();
+builder.Services.AddScoped<WorkflowService>();
+builder.Services.AddScoped<MyService>();
 
 // ФИО в ответах админу скрываю (см. PersonalDataJson)
 builder.Services.AddOptions<Microsoft.AspNetCore.Mvc.JsonOptions>()

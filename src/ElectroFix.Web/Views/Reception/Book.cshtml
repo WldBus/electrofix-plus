@@ -1,0 +1,18 @@
+@model ElectroFix.Web.Models.BookPage
+@{
+    ViewData["Title"] = "Запись клиента";
+    ViewData["DeviceAction"] = "AddDevice";
+    var c = Model.Client!;
+}
+<div class="card p-3 mb-3 d-flex flex-row flex-wrap align-items-center gap-3">
+    <i class="bi bi-person-vcard fs-2 text-primary"></i>
+    <div class="flex-grow-1">
+        <div class="fw-semibold">@c.DisplayName</div>
+        <div class="small text-muted">@Labels.Of(Labels.ClientTypes, c.ClientType) · @c.Phone@(c.Email != null ? " · " + c.Email : "")</div>
+    </div>
+    <a asp-action="Clients" class="btn btn-sm btn-outline-secondary">Другой клиент</a>
+</div>
+<partial name="_BookForm" model="Model" view-data="ViewData" />
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

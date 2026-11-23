@@ -55,7 +55,19 @@ builder.Services.AddAuthorization(o => o.FallbackPolicy = new AuthorizationPolic
     .RequireRole(RoleCodes.Admin)
     .Build());
 
-builder.Services.AddControllersWithViews(o => o.Filters.Add<ApiErrorFilter>());
+builder.Services.AddControllersWithViews(o =>
+{
+    o.Filters.Add<ApiErrorFilter>();
+    // свои тексты ошибок разбора вместо английских «The value '' is invalid»
+    var m = o.ModelBindingMessageProvider;
+    m.SetValueMustBeANumberAccessor(_ => "Введите число");
+    m.SetValueMustNotBeNullAccessor(_ => "Заполните поле");
+    m.SetAttemptedValueIsInvalidAccessor((value, _) => $"Значение «{value}» не подходит");
+    m.SetValueIsInvalidAccessor(value => $"Значение «{value}» не подходит");
+    m.SetMissingBindRequiredValueAccessor(_ => "Заполните поле");
+    m.SetMissingKeyOrValueAccessor(() => "Заполните поле");
+    m.SetNonPropertyAttemptedValueIsInvalidAccessor(value => $"Значение «{value}» не подходит");
+});
 
 var app = builder.Build();
 

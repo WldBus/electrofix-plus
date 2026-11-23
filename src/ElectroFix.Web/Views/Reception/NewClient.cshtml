@@ -1,0 +1,49 @@
+@model ClientSaveRequest
+@{
+    ViewData["Title"] = "Новый клиент";
+}
+<div class="card p-3 p-md-4" style="max-width: 720px">
+    <form asp-action="NewClient" method="post">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2"></div>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label asp-for="ClientType" class="form-label">Тип клиента</label>
+                <select asp-for="ClientType" class="form-select" asp-items="@(new SelectList(Labels.ClientTypes, "Key", "Value"))"></select>
+                <span asp-validation-for="ClientType" class="text-danger small"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="DisplayName" class="form-label">ФИО или название</label>
+                <input asp-for="DisplayName" class="form-control" />
+                <span asp-validation-for="DisplayName" class="text-danger small"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Phone" class="form-label">Телефон</label>
+                <input asp-for="Phone" class="form-control" placeholder="+79991234567" />
+                <span asp-validation-for="Phone" class="text-danger small"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Email" class="form-label">Email</label>
+                <input asp-for="Email" class="form-control" />
+                <span asp-validation-for="Email" class="text-danger small"></span>
+                <div class="form-text">По email или телефону клиент потом увидит свои ремонты в кабинете</div>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Inn" class="form-label">ИНН <span class="text-muted">(для организаций)</span></label>
+                <input asp-for="Inn" class="form-control" />
+                <span asp-validation-for="Inn" class="text-danger small"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Address" class="form-label">Адрес</label>
+                <input asp-for="Address" class="form-control" />
+                <span asp-validation-for="Address" class="text-danger small"></span>
+            </div>
+        </div>
+        <div class="mt-4 d-flex gap-2">
+            <button class="btn btn-primary">Сохранить и записать</button>
+            <a asp-action="Clients" class="btn btn-link">Назад</a>
+        </div>
+    </form>
+</div>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

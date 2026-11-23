@@ -1,0 +1,27 @@
+@model LoginRequest
+@{
+    ViewData["Title"] = "Вход";
+    ViewData["HideTitle"] = true;
+}
+<div class="card auth-box mx-auto p-4">
+    <h1 class="h4 mb-1">Вход в ElectroFix+</h1>
+    <p class="text-muted mb-4">Для клиентов и сотрудников сервиса</p>
+    <form asp-action="Login" asp-route-returnUrl="@ViewBag.ReturnUrl" method="post">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2"></div>
+        <div class="mb-3">
+            <label asp-for="Email" class="form-label">Email</label>
+            <input asp-for="Email" class="form-control" autocomplete="username" autofocus />
+            <span asp-validation-for="Email" class="text-danger small"></span>
+        </div>
+        <div class="mb-3">
+            <label asp-for="Password" class="form-label">Пароль</label>
+            <input asp-for="Password" type="password" class="form-control" autocomplete="current-password" />
+            <span asp-validation-for="Password" class="text-danger small"></span>
+        </div>
+        <button class="btn btn-primary w-100">Войти</button>
+    </form>
+    <p class="small text-muted mt-3 mb-0">Нет кабинета? <a asp-action="Register">Зарегистрируйтесь</a> — это займёт минуту.</p>
+</div>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -117,7 +117,9 @@ public class FinanceService(AppDbContext db)
         var query = db.StockBalance.AsQueryable();
         if (q.Search.Like() is { } like)
         {
-            query = query.Where(b => EF.Functions.ILike(b.Name, like) || EF.Functions.ILike(b.Article, like));
+            // ищу и по партии с ячейкой: закупщику так проще найти, что куда положил
+            query = query.Where(b => EF.Functions.ILike(b.Name, like) || EF.Functions.ILike(b.Article, like)
+                                     || EF.Functions.ILike(b.Batch, like) || EF.Functions.ILike(b.StorageCell!, like));
         }
         return query.SortBy(q.Sort, BalanceSort, "name").ToPagedAsync(q, b => new StockBalanceDto(
             b.PartId, b.Article, b.Name, b.Batch, b.StorageCell, b.OnHand, b.Reserved, b.Available));

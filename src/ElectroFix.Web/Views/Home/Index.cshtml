@@ -1,8 +1,97 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@model PagedResult<ServiceDto>
+@using System.Security.Claims
+@{
+    ViewData["Title"] = "Ремонт техники";
+    ViewData["HideTitle"] = true;
+    var q = (CatalogListQuery)ViewBag.Query;
+    var categories = (List<string>)ViewBag.Categories;
+    var role = User.FindFirstValue(ClaimTypes.Role);
 }
+<section class="hero p-4 p-md-5 mb-4">
+    <h1 class="display-6 fw-semibold">Ремонт бытовой техники и электроники</h1>
+    <p class="lead mb-4">Стиральные и посудомоечные машины, холодильники, ноутбуки, телевизоры. Диагностика, смета до начала работ и гарантия на ремонт.</p>
+    @if (role == null)
+    {
+        <a class="btn btn-warning btn-lg" asp-controller="Cabinet" asp-action="Book"><i class="bi bi-calendar-plus"></i> Записаться на ремонт</a>
+        <a class="btn btn-outline-light btn-lg ms-sm-2 mt-2 mt-sm-0" asp-controller="Account" asp-action="Register">Создать кабинет</a>
+    }
+    else if (role == RoleCodes.Client)
+    {
+        <a class="btn btn-warning btn-lg" asp-controller="Cabinet" asp-action="Book"><i class="bi bi-calendar-plus"></i> Записаться на ремонт</a>
+    }
+</section>
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card p-3 h-100"><i class="bi bi-search fs-3 text-primary"></i><b class="mt-2">1. Запись и диагностика</b>
+            <span class="text-muted small">Записываетесь онлайн, приносите технику в удобный филиал, мастер ищет причину.</span></div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-3 h-100"><i class="bi bi-list-check fs-3 text-primary"></i><b class="mt-2">2. Смета в кабинете</b>
+            <span class="text-muted small">Вы сами отмечаете, какие работы и запчасти согласны оплатить. Без вашего согласия не ремонтируем.</span></div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-3 h-100"><i class="bi bi-shield-check fs-3 text-primary"></i><b class="mt-2">3. Ремонт с гарантией</b>
+            <span class="text-muted small">Статус ремонта видно в кабинете. Оплата при получении в филиале.</span></div>
+    </div>
 </div>
+
+<h2 class="h4 mb-3">Цены на работы</h2>
+<div class="card">
+    <form method="get" class="row g-2 p-3 border-bottom">
+        <div class="col-12 col-md-5">
+            <input name="search" value="@q.Search" class="form-control" placeholder="Поиск работы, например «замена»" />
+        </div>
+        <div class="col-8 col-md-4">
+            <select name="category" class="form-select" data-autosubmit>
+                <option value="">Все категории</option>
+                @foreach (var c in categories)
+                {
+                    <option value="@c" selected="@(c == q.Category)">@c</option>
+                }
+            </select>
+        </div>
+        <input type="hidden" name="sort" value="@q.Sort" />
+        <div class="col-4 col-md-3 d-flex gap-2">
+            <button class="btn btn-primary flex-grow-1"><i class="bi bi-search"></i> Найти</button>
+            @if (!string.IsNullOrEmpty(q.Search) || !string.IsNullOrEmpty(q.Category))
+            {
+                <a asp-action="Index" class="btn btn-outline-secondary" title="Сбросить"><i class="bi bi-x-lg"></i></a>
+            }
+        </div>
+    </form>
+    @if (Model.Items.Count == 0)
+    {
+        <div class="p-4 text-center text-muted"><i class="bi bi-inbox fs-2 d-block"></i>Ничего не нашлось. Попробуйте изменить поиск.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th>@Html.SortHeader("name", "Работа")</th>
+                    <th class="d-none d-md-table-cell">@Html.SortHeader("category", "Категория")</th>
+                    <th class="text-end d-none d-sm-table-cell">@Html.SortHeader("hours", "Время, ч")</th>
+                    <th class="text-end">@Html.SortHeader("rate", "Цена")</th>
+                    <th class="text-end d-none d-md-table-cell">Гарантия</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var s in Model.Items)
+                {
+                    <tr>
+                        <td>@s.Name<div class="small text-muted d-md-none">@s.Category</div></td>
+                        <td class="d-none d-md-table-cell">@s.Category</td>
+                        <td class="text-end d-none d-sm-table-cell">@HtmlHelpers.Num(s.NormHours)</td>
+                        <td class="text-end text-nowrap">от @HtmlHelpers.Money(s.Rate * s.NormHours)</td>
+                        <td class="text-end d-none d-md-table-cell">@(s.WarrantyMonths == 0 ? "–" : s.WarrantyMonths + " мес.")</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+    <partial name="_Pager" model="new PagerModel(Model.Page, Model.Size, Model.Total)" />
+</div>
+<p class="small text-muted mt-2">Цена работы = норма времени × ставка. Точную стоимость с запчастями вы увидите в смете после диагностики.</p>

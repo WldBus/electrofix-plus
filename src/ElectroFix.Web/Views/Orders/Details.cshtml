@@ -1,0 +1,169 @@
+@model ElectroFix.Web.Models.OrderPage
+@{
+    var h = Model.Order.Header;
+    ViewData["Title"] = "Заказ-наряд " + h.WorkOrderNumber;
+    ViewData["HideTitle"] = true;
+    var receptionist = Model.Mode == RoleCodes.Receptionist;
+    var moves = Model.CanAct ? WorkOrderRules.MovesFor(Model.Mode, h.Status) : [];
+    var debts = Model.Order.Invoices.Where(i => i.Debt > 0).ToList();
+    // подсказка «что дальше» для текущего статуса
+    var hint = h.Status switch
+    {
+        "new" or "diagnostics" => "Добавьте в смету диагностику и нужные работы/запчасти, затем отправьте смету клиенту.",
+        "estimate" => "Смета у клиента. Он согласует её в кабинете, или отметьте его решение сами, если он ответил по телефону.",
+        "approved" => receptionist ? "Смета согласована — назначьте мастера." : "Ждём назначения мастера.",
+        "assigned" => "Мастер назначен. Закупщик выдаёт запчасти, мастер берёт заказ в работу.",
+        "in_progress" => "Идёт ремонт. Мастер отмечает фактическое время и передаёт на контроль качества.",
+        "pdi" => "Контроль качества: приёмщик проверяет и переводит в «Готов к выдаче» или возвращает в работу.",
+        "ready" => "Готов к выдаче. Закройте заказ-наряд — выставится счёт, затем примите оплату.",
+        "closed" => debts.Count > 0 ? "Заказ-наряд закрыт, ожидается оплата." : "Заказ-наряд закрыт и оплачен.",
+        _ => "",
+    };
+}
+<a asp-controller="@(receptionist ? "Reception" : "Master")" asp-action="@(receptionist ? "Orders" : "Index")" class="d-inline-block mb-3">
+    <i class="bi bi-arrow-left"></i> К списку
+</a>
+@if (!Model.CanAct)
+{
+    <div class="alert alert-secondary"><i class="bi bi-eye"></i> Это заказ-наряд другого мастера — только просмотр.</div>
+}
+else if (hint != "")
+{
+    <div class="alert alert-light border"><i class="bi bi-signpost-2"></i> @hint</div>
+}
+
+<div class="row g-3">
+    <div class="col-xl-8">
+        <partial name="_OrderCard" model="Model" />
+    </div>
+    <div class="col-xl-4">
+        @if (moves.Length > 0 || (Model.CanAct && Model.HasDraft) || (receptionist && h.Status == "ready"))
+        {
+            <div class="card p-3 mb-3">
+                <h2 class="h6 text-muted text-uppercase small">Действия</h2>
+                <div class="d-flex flex-wrap gap-2">
+                    @if (Model.CanAct && Model.HasDraft)
+                    {
+                        <form asp-action="SendEstimate" asp-route-id="@h.WorkOrderId" method="post">
+                            <button class="btn btn-warning"><i class="bi bi-send"></i> Отправить смету клиенту</button>
+                        </form>
+                    }
+                    @foreach (var to in moves)
+                    {
+                        var danger = to == "cancelled";
+                        <form asp-action="Status" asp-route-id="@h.WorkOrderId" asp-route-status="@to" method="post">
+                            <button class="btn @(danger ? "btn-outline-danger" : "btn-primary")"
+                                    data-confirm="@(danger ? "Отменить заказ-наряд?" : null)">
+                                @(danger ? "Отменить" : "→ " + Labels.Of(Labels.WorkOrderStatuses, to))
+                            </button>
+                        </form>
+                    }
+                    @if (receptionist && h.Status == "ready")
+                    {
+                        <form asp-action="Close" asp-route-id="@h.WorkOrderId" method="post">
+                            <button class="btn btn-success" data-confirm="Закрыть заказ-наряд и выставить счёт?"><i class="bi bi-receipt"></i> Закрыть и выставить счёт</button>
+                        </form>
+                    }
+                </div>
+            </div>
+        }
+
+        @if (receptionist && h.Status == "approved")
+        {
+            <div class="card p-3 mb-3">
+                <h2 class="h6 text-muted text-uppercase small">Назначить мастера</h2>
+                <form asp-action="Assign" asp-route-id="@h.WorkOrderId" method="post" class="d-flex gap-2">
+                    <select name="MasterId" class="form-select" required aria-label="Мастер">
+                        <option value="">— мастер —</option>
+                        @foreach (var m in Model.Masters)
+                        {
+                            <option value="@m.UserId" selected="@(m.UserId == h.MasterId)">@m.FullName (в работе: @m.ActiveOrders)</option>
+                        }
+                    </select>
+                    <button class="btn btn-primary">Назначить</button>
+                </form>
+            </div>
+        }
+
+        @if (receptionist && debts.Count > 0)
+        {
+            foreach (var i in debts)
+            {
+                <div class="card p-3 mb-3">
+                    <h2 class="h6 text-muted text-uppercase small">Оплата счёта @i.InvoiceNumber</h2>
+                    <form asp-action="Pay" asp-route-id="@h.WorkOrderId" method="post">
+                        <input type="hidden" name="InvoiceId" value="@i.InvoiceId" />
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label small" for="amount-@i.InvoiceId">Сумма, ₽</label>
+                                <input id="amount-@i.InvoiceId" name="Amount" type="number" min="0.01" max="@i.Debt.ToString(System.Globalization.CultureInfo.InvariantCulture)" step="0.01"
+                                       value="@i.Debt.ToString(System.Globalization.CultureInfo.InvariantCulture)" class="form-control" required />
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small" for="method-@i.InvoiceId">Способ</label>
+                                <select id="method-@i.InvoiceId" name="Method" class="form-select">
+                                    @foreach (var (key, label) in Labels.PaymentMethods)
+                                    {
+                                        <option value="@key">@label</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                        <div class="small text-muted my-2">Долг: @HtmlHelpers.Money(i.Debt)</div>
+                        <button class="btn btn-success w-100"><i class="bi bi-cash-coin"></i> Принять оплату</button>
+                    </form>
+                </div>
+            }
+        }
+
+        @if (Model.EstimateEditable)
+        {
+            <div class="card p-3 mb-3">
+                <h2 class="h6 text-muted text-uppercase small">Добавить работу в смету</h2>
+                <form asp-action="AddService" asp-route-id="@h.WorkOrderId" method="post">
+                    <select name="ServiceId" class="form-select mb-2" required aria-label="Работа">
+                        <option value="">— работа —</option>
+                        @foreach (var g in Model.Services.GroupBy(s => s.Category).OrderBy(g => g.Key))
+                        {
+                            <optgroup label="@g.Key">
+                                @foreach (var s in g)
+                                {
+                                    <option value="@s.ServiceId">@s.Name — @HtmlHelpers.Money(s.Rate * s.NormHours)</option>
+                                }
+                            </optgroup>
+                        }
+                    </select>
+                    <div class="input-group mb-2">
+                        <span class="input-group-text">Скидка (−) / наценка (+)</span>
+                        <input name="DiscountMarkup" type="number" min="-50" max="100" step="1" value="0" class="form-control" aria-label="Скидка или наценка, %" />
+                        <span class="input-group-text">%</span>
+                    </div>
+                    <button class="btn btn-outline-primary w-100"><i class="bi bi-plus-lg"></i> В черновик сметы</button>
+                </form>
+            </div>
+            <div class="card p-3 mb-3">
+                <h2 class="h6 text-muted text-uppercase small">Добавить запчасть в смету</h2>
+                <form asp-action="AddPart" asp-route-id="@h.WorkOrderId" method="post">
+                    <select name="PartId" class="form-select mb-2" required aria-label="Запчасть">
+                        <option value="">— запчасть —</option>
+                        @foreach (var p in Model.Parts)
+                        {
+                            <option value="@p.PartId">@p.Name (@p.Article)</option>
+                        }
+                    </select>
+                    <div class="row g-2 mb-2">
+                        <div class="col-5">
+                            <label class="form-label small" for="partQty">Количество</label>
+                            <input id="partQty" name="Quantity" type="number" min="0.01" step="0.01" value="1" class="form-control" required />
+                        </div>
+                        <div class="col-7">
+                            <label class="form-label small" for="partPrice">Цена для клиента, ₽</label>
+                            <input id="partPrice" name="Price" type="number" min="0" step="0.01" class="form-control" required />
+                        </div>
+                    </div>
+                    <button class="btn btn-outline-primary w-100"><i class="bi bi-plus-lg"></i> В черновик сметы</button>
+                </form>
+            </div>
+        }
+    </div>
+</div>

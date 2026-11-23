@@ -1,0 +1,44 @@
+@model DeviceSaveRequest
+@* поля нового устройства: и в кабинете клиента, и у приёмщика *@
+<div class="row g-2">
+    <div class="col-sm-6">
+        <label asp-for="Type" class="form-label">Тип</label>
+        <input asp-for="Type" class="form-control" list="deviceTypes" placeholder="Стиральная машина" />
+        <datalist id="deviceTypes">
+            <option value="Стиральная машина"></option>
+            <option value="Посудомоечная машина"></option>
+            <option value="Холодильник"></option>
+            <option value="Ноутбук"></option>
+            <option value="Телевизор"></option>
+            <option value="Смартфон"></option>
+            <option value="Микроволновая печь"></option>
+        </datalist>
+        <span asp-validation-for="Type" class="text-danger small"></span>
+    </div>
+    <div class="col-sm-6">
+        <label asp-for="Brand" class="form-label">Марка</label>
+        <input asp-for="Brand" class="form-control" placeholder="Bosch" />
+        <span asp-validation-for="Brand" class="text-danger small"></span>
+    </div>
+    <div class="col-sm-6">
+        <label asp-for="Model" class="form-label">Модель</label>
+        <input asp-for="Model" class="form-control" />
+        <span asp-validation-for="Model" class="text-danger small"></span>
+    </div>
+    <div class="col-sm-6">
+        <label asp-for="ManufactureYear" class="form-label">Год выпуска <span class="text-muted">(если знаете)</span></label>
+        <input asp-for="ManufactureYear" class="form-control" />
+        <span asp-validation-for="ManufactureYear" class="text-danger small"></span>
+    </div>
+    <div class="col-sm-6">
+        <label asp-for="SerialNumber" class="form-label">Серийный номер</label>
+        <input asp-for="SerialNumber" class="form-control" placeholder="SN-12345" />
+        <span asp-validation-for="SerialNumber" class="text-danger small"></span>
+        <div class="form-text">Обычно на наклейке сзади или снизу</div>
+    </div>
+    <div class="col-sm-6">
+        <label asp-for="InventoryNumber" class="form-label">Инвентарный номер <span class="text-muted">(для организаций)</span></label>
+        <input asp-for="InventoryNumber" class="form-control" />
+        <span asp-validation-for="InventoryNumber" class="text-danger small"></span>
+    </div>
+</div>

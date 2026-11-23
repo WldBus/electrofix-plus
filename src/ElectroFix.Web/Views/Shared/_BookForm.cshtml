@@ -1,0 +1,81 @@
+@model ElectroFix.Web.Models.BookPage
+@* Запись на приём + добавление устройства. Клиент записывает себя, приёмщик — клиента
+   (у приёмщика ещё есть приоритет и длительность). DeviceAction — куда отправить новое устройство *@
+@{
+    var staff = Model.Client != null;
+    var deviceAction = (string)ViewData["DeviceAction"]!;
+}
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card p-3 p-md-4">
+            <h2 class="h5 mb-3"><i class="bi bi-calendar-plus"></i> Запись на приём</h2>
+            @if (Model.Devices.Count == 0)
+            {
+                <div class="alert alert-info mb-0">Сначала добавьте устройство — форма справа@(staff ? "" : " (на телефоне — ниже)").</div>
+            }
+            else
+            {
+                <form asp-action="Book" asp-route-clientId="@Model.Client?.ClientId" method="post">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2"></div>
+                    <div class="mb-3">
+                        <label asp-for="Form.DeviceId" class="form-label">Устройство</label>
+                        <select asp-for="Form.DeviceId" class="form-select">
+                            <option value="0">— выберите —</option>
+                            @foreach (var d in Model.Devices)
+                            {
+                                <option value="@d.DeviceId">@d.Type @d.Brand @d.Model (SN @d.SerialNumber)</option>
+                            }
+                        </select>
+                        <span asp-validation-for="Form.DeviceId" class="text-danger small"></span>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-sm-6">
+                            <label asp-for="Form.Branch" class="form-label">Филиал</label>
+                            <select asp-for="Form.Branch" class="form-select" asp-items="@(new SelectList(Branches.All))"></select>
+                            <span asp-validation-for="Form.Branch" class="text-danger small"></span>
+                        </div>
+                        <div class="col-sm-6">
+                            <label asp-for="Form.SlotStart" class="form-label">Дата и время (по Москве)</label>
+                            <input asp-for="Form.SlotStart" type="datetime-local" step="900" class="form-control"
+                                   value="@(Model.Form.SlotStart is { } slot ? HtmlHelpers.LocalInput(slot) : "")" />
+                            <span asp-validation-for="Form.SlotStart" class="text-danger small"></span>
+                        </div>
+                        @if (staff)
+                        {
+                            <div class="col-sm-6">
+                                <label asp-for="Form.Priority" class="form-label">Приоритет</label>
+                                <select asp-for="Form.Priority" class="form-select" asp-items="@(new SelectList(Labels.Priorities, "Key", "Value"))"></select>
+                                <span asp-validation-for="Form.Priority" class="text-danger small"></span>
+                            </div>
+                            <div class="col-sm-6">
+                                <label asp-for="Form.DurationMinutes" class="form-label">Длительность приёма, мин</label>
+                                <input asp-for="Form.DurationMinutes" class="form-control" min="30" max="240" step="15" />
+                                <span asp-validation-for="Form.DurationMinutes" class="text-danger small"></span>
+                            </div>
+                        }
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Form.Defects" class="form-label">Что случилось</label>
+                        <textarea asp-for="Form.Defects" class="form-control" rows="3" placeholder="Не включается, гудит, течёт вода…"></textarea>
+                        <span asp-validation-for="Form.Defects" class="text-danger small"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Form.ServicesRequested" class="form-label">Пожелания по работам <span class="text-muted">(необязательно)</span></label>
+                        <input asp-for="Form.ServicesRequested" class="form-control" placeholder="Например: заодно почистить фильтр" />
+                        <span asp-validation-for="Form.ServicesRequested" class="text-danger small"></span>
+                    </div>
+                    <button class="btn btn-primary"><i class="bi bi-check2"></i> Записать</button>
+                </form>
+            }
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card p-3 p-md-4">
+            <h2 class="h5 mb-3"><i class="bi bi-plus-circle"></i> Новое устройство</h2>
+            <form asp-action="@deviceAction" asp-route-clientId="@Model.Client?.ClientId" asp-route-book="true" method="post">
+                <partial name="_DeviceFields" for="NewDevice" />
+                <button class="btn btn-outline-primary mt-3">Добавить устройство</button>
+            </form>
+        </div>
+    </div>
+</div>

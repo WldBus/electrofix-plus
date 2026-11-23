@@ -1,0 +1,218 @@
+@model ElectroFix.Web.Models.OrderPage
+@using ElectroFix.Web.Models
+@* Карточка заказ-наряда: шапка, смета, счета. Её видят клиент, приёмщик и мастер,
+   а кнопки в строках сметы зависят от того, кто смотрит (Model.Mode) *@
+@{
+    var o = Model.Order;
+    var h = o.Header;
+    var decideController = Model.Mode == RoleCodes.Client ? "Cabinet" : "Orders";
+}
+<div class="card p-3 mb-3">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+        <div>
+            <div class="h5 mb-1">Заказ-наряд @h.WorkOrderNumber @HtmlHelpers.Status(Labels.WorkOrderStatuses, h.Status)</div>
+            <div class="text-muted">@h.Device · SN @h.SerialNumber</div>
+        </div>
+        <div class="text-md-end small">
+            <div>Открыт: @HtmlHelpers.Time(h.OpenedAt)</div>
+            @if (h.ClosedAt != null)
+            {
+                <div>Закрыт: @HtmlHelpers.Time(h.ClosedAt)</div>
+            }
+        </div>
+    </div>
+    <hr />
+    <dl class="row mb-0 small">
+        @if (Model.Mode != RoleCodes.Client)
+        {
+            <dt class="col-sm-3">Клиент</dt><dd class="col-sm-9">@h.Client</dd>
+        }
+        <dt class="col-sm-3">Филиал</dt><dd class="col-sm-9">@h.Branch</dd>
+        <dt class="col-sm-3">Приёмщик</dt><dd class="col-sm-9">@h.Receptionist</dd>
+        <dt class="col-sm-3">Мастер</dt><dd class="col-sm-9">@(h.Master ?? "ещё не назначен")</dd>
+        <dt class="col-sm-3">Неисправность</dt><dd class="col-sm-9">@(o.Checkin.Defects ?? "–")</dd>
+        @if (!string.IsNullOrEmpty(o.Checkin.ConditionState))
+        {
+            <dt class="col-sm-3">Состояние при приёмке</dt><dd class="col-sm-9">@o.Checkin.ConditionState</dd>
+        }
+    </dl>
+</div>
+
+<div class="card mb-3">
+    <div class="p-3 pb-0 d-flex flex-wrap justify-content-between gap-2">
+        <h2 class="h5 mb-0">Смета</h2>
+        @if (Model.CanDecide)
+        {
+            <span class="text-warning-emphasis small"><i class="bi bi-info-circle"></i> Отметьте позиции, которые согласны оплатить</span>
+        }
+    </div>
+    @if (o.Services.Count == 0 && o.Parts.Count == 0)
+    {
+        <div class="p-4 text-center text-muted">Смета пока пустая — мастер ещё проводит диагностику.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead class="table-light">
+                <tr>
+                    @if (Model.CanDecide)
+                    {
+                        <th style="width: 2rem"></th>
+                    }
+                    <th>Позиция</th>
+                    <th class="text-end">Кол-во / время</th>
+                    <th class="text-end">Цена</th>
+                    <th class="text-end">Сумма</th>
+                    <th>Статус</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var s in o.Services)
+                {
+                    <tr class="@(s.ApprovalStatus == "draft" ? "line-draft" : "")">
+                        @if (Model.CanDecide)
+                        {
+                            <td>
+                                @if (s.ApprovalStatus == "pending")
+                                {
+                                    <input type="checkbox" class="form-check-input" form="decideForm" name="approvedServiceIds" value="@s.OrderServiceId" checked aria-label="Согласовать" />
+                                }
+                            </td>
+                        }
+                        <td>
+                            <i class="bi bi-tools text-muted"></i> @s.ServiceName
+                            @if (s.DiscountMarkup != 0)
+                            {
+                                <span class="badge bg-light text-dark border">@(s.DiscountMarkup > 0 ? "+" : "")@HtmlHelpers.Num(s.DiscountMarkup) %</span>
+                            }
+                            @if (s.EstimateVersion > 1)
+                            {
+                                <span class="badge bg-light text-muted border" title="Добавлено после первой сметы">доп.</span>
+                            }
+                        </td>
+                        <td class="text-end text-nowrap">
+                            @HtmlHelpers.Num(s.NormHours) ч
+                            @if (s.ActualTime > 0)
+                            {
+                                <div class="small text-muted">факт @HtmlHelpers.Num(s.ActualTime) ч</div>
+                            }
+                        </td>
+                        <td class="text-end text-nowrap">@HtmlHelpers.Money(s.Rate) /ч</td>
+                        <td class="text-end text-nowrap">@HtmlHelpers.Money(OrderPage.Sum(s))</td>
+                        <td>@HtmlHelpers.Status(Labels.ApprovalStatuses, s.ApprovalStatus)</td>
+                        <td class="text-end text-nowrap">
+                            @if (Model.EstimateEditable && s.ApprovalStatus == "draft")
+                            {
+                                <button form="lineForm" formaction="@Url.Action("RemoveService", "Orders", new { id = h.WorkOrderId, lineId = s.OrderServiceId })"
+                                        class="btn btn-sm btn-outline-danger" title="Убрать из черновика" data-confirm="Убрать работу из сметы?"><i class="bi bi-x-lg"></i></button>
+                            }
+                            @if (Model.CanSetTime && s.ApprovalStatus == "approved")
+                            {
+                                <div class="input-group input-group-sm" style="width: 9rem">
+                                    <input form="time-@s.OrderServiceId" name="actualTime" type="number" min="0" max="200" step="0.1"
+                                           value="@s.ActualTime.ToString(System.Globalization.CultureInfo.InvariantCulture)" class="form-control" aria-label="Фактическое время, ч" />
+                                    <button form="time-@s.OrderServiceId" class="btn btn-outline-primary" title="Сохранить фактическое время"><i class="bi bi-clock"></i></button>
+                                </div>
+                            }
+                        </td>
+                    </tr>
+                }
+                @foreach (var p in o.Parts)
+                {
+                    <tr class="@(p.ApprovalStatus == "draft" ? "line-draft" : "")">
+                        @if (Model.CanDecide)
+                        {
+                            <td>
+                                @if (p.ApprovalStatus == "pending")
+                                {
+                                    <input type="checkbox" class="form-check-input" form="decideForm" name="approvedPartIds" value="@p.OrderPartId" checked aria-label="Согласовать" />
+                                }
+                            </td>
+                        }
+                        <td>
+                            <i class="bi bi-cpu text-muted"></i> @p.PartName <span class="small text-muted">@p.Article</span>
+                            @if (p.Batch != null && Model.Mode != RoleCodes.Client)
+                            {
+                                <div class="small text-muted">партия @p.Batch</div>
+                            }
+                        </td>
+                        <td class="text-end">@HtmlHelpers.Num(p.Quantity)</td>
+                        <td class="text-end text-nowrap">@HtmlHelpers.Money(p.Price)</td>
+                        <td class="text-end text-nowrap">@HtmlHelpers.Money(OrderPage.Sum(p))</td>
+                        <td>@HtmlHelpers.Status(Labels.ApprovalStatuses, p.ApprovalStatus)</td>
+                        <td class="text-end">
+                            @if (Model.EstimateEditable && p.ApprovalStatus == "draft")
+                            {
+                                <button form="lineForm" formaction="@Url.Action("RemovePart", "Orders", new { id = h.WorkOrderId, lineId = p.OrderPartId })"
+                                        class="btn btn-sm btn-outline-danger" title="Убрать из черновика" data-confirm="Убрать запчасть из сметы?"><i class="bi bi-x-lg"></i></button>
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+                <tfoot>
+                <tr>
+                    <td colspan="@(Model.CanDecide ? 7 : 6)" class="text-end">
+                        Согласовано на сумму: <b>@HtmlHelpers.Money(Model.ApprovedTotal)</b>
+                    </td>
+                </tr>
+                </tfoot>
+            </table>
+        </div>
+    }
+    @if (Model.CanDecide)
+    {
+        <form id="decideForm" asp-controller="@decideController" asp-action="Decide" asp-route-id="@h.WorkOrderId" method="post"
+              class="p-3 border-top d-flex flex-wrap gap-2 align-items-center">
+            <button class="btn btn-success"><i class="bi bi-check2-all"></i> Согласовать отмеченное</button>
+            <span class="small text-muted">Неотмеченные позиции будут отклонены.
+                @if (Model.Mode == RoleCodes.Receptionist)
+                {
+                    <text>Отмечайте только то, что клиент согласовал по телефону.</text>
+                }
+            </span>
+        </form>
+    }
+</div>
+@* служебные формы для кнопок внутри таблицы (вкладывать формы в таблицу нельзя) *@
+<form id="lineForm" asp-controller="Orders" asp-action="Details" asp-route-id="@h.WorkOrderId" method="post" hidden></form>
+@if (Model.CanSetTime)
+{
+    foreach (var s in o.Services.Where(s => s.ApprovalStatus == "approved"))
+    {
+        <form id="time-@s.OrderServiceId" asp-controller="Orders" asp-action="Time" asp-route-id="@h.WorkOrderId" asp-route-lineId="@s.OrderServiceId" method="post" hidden></form>
+    }
+}
+
+@if (o.Invoices.Count > 0)
+{
+    <div class="card mb-3">
+        <h2 class="h5 p-3 pb-0">Счета</h2>
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead class="table-light">
+                <tr><th>Номер</th><th>Выставлен</th><th class="text-end">Сумма</th><th class="text-end">Оплачено</th><th class="text-end">Долг</th><th>Статус</th></tr>
+                </thead>
+                <tbody>
+                @foreach (var i in o.Invoices)
+                {
+                    <tr>
+                        <td>@i.InvoiceNumber</td>
+                        <td>@HtmlHelpers.Day(i.IssuedAt)</td>
+                        <td class="text-end text-nowrap">@HtmlHelpers.Money(i.Amount)</td>
+                        <td class="text-end text-nowrap">@HtmlHelpers.Money(i.Paid)</td>
+                        <td class="text-end text-nowrap @(i.Debt > 0 ? "text-danger fw-semibold" : "")">@HtmlHelpers.Money(i.Debt)</td>
+                        <td>@HtmlHelpers.Status(Labels.InvoiceStatuses, i.Status)</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+        @if (Model.Mode == RoleCodes.Client && o.Invoices.Any(i => i.Debt > 0))
+        {
+            <div class="p-3 border-top small text-muted"><i class="bi bi-cash-coin"></i> Оплатить можно в филиале при получении техники — наличными или картой.</div>
+        }
+    </div>
+}

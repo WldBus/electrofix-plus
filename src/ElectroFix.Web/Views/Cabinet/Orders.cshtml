@@ -1,0 +1,6 @@
+@model PagedResult<WorkOrderDto>
+@{
+    ViewData["Title"] = "Мои ремонты";
+    ViewData["OrderLink"] = "Order";
+}
+<partial name="_OrderList" model="Model" view-data="ViewData" />

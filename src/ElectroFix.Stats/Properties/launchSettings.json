@@ -5,6 +5,7 @@
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": true,
+      "launchUrl": "api/health",
       "applicationUrl": "http://localhost:5110",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
@@ -14,6 +15,7 @@
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": true,
+      "launchUrl": "api/health",
       "applicationUrl": "https://localhost:7124;http://localhost:5110",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"

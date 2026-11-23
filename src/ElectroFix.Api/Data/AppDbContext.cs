@@ -99,6 +99,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(x => x.Email).HasMaxLength(120);
             e.Property(x => x.CreatedAt).HasDefaultValueSql("now()");
             e.HasIndex(x => x.Inn, "uq_clients_inn").IsUnique();
+            e.HasIndex(x => x.UserId, "uq_clients_user").IsUnique();
+            e.HasOne<User>().WithMany().HasForeignKey(x => x.UserId)
+                .HasConstraintName("fk_clients_user").OnDelete(DeleteBehavior.SetNull);
         });
 
         b.Entity<Device>(e =>
