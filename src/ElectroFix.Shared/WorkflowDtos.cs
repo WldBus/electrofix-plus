@@ -184,7 +184,8 @@ public record PartToIssueDto(
 public record MasterDto(int UserId, [property: PersonalName] string FullName, int ActiveOrders);
 
 // Кто и куда может перевести заказ-наряд вручную. Этим пользуется Api для проверки
-// и сайт, чтобы показывать только нужные кнопки
+// и сайт, чтобы показывать только нужные кнопки. Остальные переходы идут через
+// отдельные действия: смета, согласование, назначение мастера, закрытие
 public static class WorkOrderRules
 {
     public static readonly Dictionary<string, string[]> ReceptionistMoves = new()
@@ -206,6 +207,11 @@ public static class WorkOrderRules
     // смету можно править, пока ремонт не дошёл до проверки качества
     public static readonly string[] EditableEstimate = ["new", "diagnostics", "estimate", "approved", "assigned", "in_progress"];
 
-    public static string[] MovesFor(string role, string status) =>
-        (role == RoleCodes.Master ? MasterMoves : ReceptionistMoves).GetValueOrDefault(status, []);
+    // клиенту, закупщику и админу статусы кнопками менять нельзя — для них пусто
+    public static string[] MovesFor(string role, string status) => role switch
+    {
+        RoleCodes.Receptionist => ReceptionistMoves.GetValueOrDefault(status, []),
+        RoleCodes.Master => MasterMoves.GetValueOrDefault(status, []),
+        _ => [],
+    };
 }

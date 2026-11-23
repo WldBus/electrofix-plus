@@ -14,8 +14,6 @@ public class WorkflowService(AppDbContext db, CurrentUser current, RepairService
 {
     private static readonly TimeZoneInfo Moscow = TimeZoneInfo.FindSystemTimeZoneById("Europe/Moscow");
 
-    // какие статусы заказ-наряда каждая роль меняет обычной кнопкой. Остальные переходы
-    // идут через отдельные действия: смета, согласование, назначение мастера, закрытие
     // ---------- устройства и записи ----------
 
     public async Task<DeviceDto> AddDeviceAsync(int clientId, DeviceSaveRequest r)
@@ -42,19 +40,7 @@ public class WorkflowService(AppDbContext db, CurrentUser current, RepairService
     // клиент записывается сам (статус «записан»), приёмщик — сразу «подтверждён» на себя
     public async Task<CheckinDto> BookAsync(CheckinSaveRequest r, bool byClient)
     {
-        var start = MoscowToUtc(r.SlotStart!.Value);
-        if (start < DateTime.UtcNow.AddMinutes(-5))
-        {
-            throw ApiException.Field(nameof(r.SlotStart), "Это время уже прошло");
-        }
-        if (start > DateTime.UtcNow.AddDays(90))
-        {
-            throw ApiException.Field(nameof(r.SlotStart), "Записаться можно не дальше чем на 90 дней вперёд");
-        }
-        if (!Branches.All.Contains(r.Branch))
-        {
-            throw ApiException.Field(nameof(r.Branch), "Такого филиала нет");
-        }
+        var start = CheckSlot(r.SlotStart!.Value, r.Branch, DateTime.UtcNow);
         if (!await db.Devices.AnyAsync(d => d.DeviceId == r.DeviceId))
         {
             throw ApiException.Field(nameof(r.DeviceId), "Такого устройства нет");
@@ -383,6 +369,27 @@ public class WorkflowService(AppDbContext db, CurrentUser current, RepairService
 
     // время из формы — московское, в базу кладу UTC
     // (если время пришло с часовым поясом, он уже учтён)
+    // время записи приходит по Москве. Проверяю, что оно не в прошлом (5 минут даю на
+    // заполнение формы), не дальше 90 дней и филиал настоящий. Возвращаю уже в UTC.
+    // «Сейчас» передаю параметром, чтобы правило можно было проверить тестом без базы
+    public static DateTime CheckSlot(DateTime slotStart, string branch, DateTime nowUtc)
+    {
+        var start = MoscowToUtc(slotStart);
+        if (start < nowUtc.AddMinutes(-5))
+        {
+            throw ApiException.Field(nameof(CheckinSaveRequest.SlotStart), "Это время уже прошло");
+        }
+        if (start > nowUtc.AddDays(90))
+        {
+            throw ApiException.Field(nameof(CheckinSaveRequest.SlotStart), "Записаться можно не дальше чем на 90 дней вперёд");
+        }
+        if (!Branches.All.Contains(branch))
+        {
+            throw ApiException.Field(nameof(CheckinSaveRequest.Branch), "Такого филиала нет");
+        }
+        return start;
+    }
+
     private static DateTime MoscowToUtc(DateTime value) => value.Kind switch
     {
         DateTimeKind.Utc => value,

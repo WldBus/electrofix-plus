@@ -46,6 +46,47 @@ public class CrudTests(ApiFactory factory) : IClassFixture<ApiFactory>, IAsyncLi
     }
 
     [Fact]
+    public async Task List_SecondPage_ContinuesFirst()
+    {
+        var first = await _api.GetFromJsonAsync<PagedResult<ServiceDto>>("/api/services?size=3&page=1&sort=id,asc");
+        var second = await _api.GetFromJsonAsync<PagedResult<ServiceDto>>("/api/services?size=3&page=2&sort=id,asc");
+
+        // вторая страница начинается сразу после первой, без повторов и пропусков
+        Assert.Equal(2, second!.Page);
+        Assert.Equal(first!.Total, second.Total);
+        Assert.True(second.Items[0].ServiceId > first.Items[^1].ServiceId);
+        Assert.Empty(first.Items.Select(s => s.ServiceId).Intersect(second.Items.Select(s => s.ServiceId)));
+    }
+
+    [Fact]
+    public async Task List_SortDesc_AndHugePageSizeIsLimited()
+    {
+        var page = await _api.GetFromJsonAsync<PagedResult<ServiceDto>>("/api/services?size=100000&sort=id,desc");
+
+        // больше 100 строк за раз не отдаю, чтобы одним запросом не выкачать всю таблицу
+        Assert.Equal(100, page!.Size);
+        Assert.Equal(page.Items.Select(s => s.ServiceId).OrderDescending(), page.Items.Select(s => s.ServiceId));
+    }
+
+    [Fact]
+    public async Task List_FilterByClientType()
+    {
+        var page = await _api.GetFromJsonAsync<PagedResult<ClientDto>>("/api/clients?clientType=legal_entity");
+
+        Assert.NotEmpty(page!.Items);
+        Assert.All(page.Items, c => Assert.Equal("legal_entity", c.ClientType));
+    }
+
+    [Fact]
+    public async Task List_FilterWorkOrdersByStatus()
+    {
+        var page = await _api.GetFromJsonAsync<PagedResult<WorkOrderDto>>("/api/work-orders?status=closed");
+
+        Assert.All(page!.Items, w => Assert.Equal("closed", w.Status));
+        Assert.Contains(page.Items, w => w.WorkOrderNumber == "ЗН-2026-00001");
+    }
+
+    [Fact]
     public async Task Create_InvalidFields_Returns422WithFieldErrors()
     {
         var response = await _api.PostAsJsonAsync("/api/clients",

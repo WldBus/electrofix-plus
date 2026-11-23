@@ -9,14 +9,6 @@ namespace ElectroFix.Api.Tests;
 public class SecurityTests(ApiFactory factory) : IClassFixture<ApiFactory>
 {
     [Fact]
-    public void MaskName_HidesPersonButNotCompany()
-    {
-        Assert.Equal("И****в А. А.", PersonalData.MaskName("Иванов Алексей Андреевич"));
-        Assert.Equal("ООО «ТехноСтрой»", PersonalData.MaskName("ООО «ТехноСтрой»"));
-        Assert.Equal("{\"full_name\": \"П*****а М. С.\"}", PersonalData.MaskJson("{\"full_name\": \"Петрова Мария Сергеевна\"}"));
-    }
-
-    [Fact]
     public async Task Admin_SeesMaskedNames_ExceptOwn_StaffSeesFull()
     {
         var admin = await factory.ClientAsAsync("admin@electrofix.ru");

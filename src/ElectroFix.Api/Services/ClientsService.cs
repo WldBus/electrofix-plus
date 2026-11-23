@@ -50,21 +50,25 @@ public class ClientsService(AppDbContext db)
 
     public async Task<ClientDto> CreateAsync(ClientSaveRequest r)
     {
-        // у юрлица и УК ИНН обязателен и из 10 цифр, у физлица — 12 цифр или пусто
-        if (r.ClientType != "individual" && r.Inn?.Length != 10)
-        {
-            throw ApiException.Field(nameof(r.Inn), "Для юридического лица и УК нужен ИНН из 10 цифр");
-        }
-        if (r.ClientType == "individual" && r.Inn != null && r.Inn.Length != 12)
-        {
-            throw ApiException.Field(nameof(r.Inn), "ИНН физического лица — 12 цифр");
-        }
-
+        CheckInn(r.ClientType, r.Inn);
         var id = await db.CallAsync<int>(
             "CALL sp_client_add(@type, @name, @phone, @inn, @address, @email, NULL)",
             ("type", r.ClientType), ("name", r.DisplayName), ("phone", r.Phone),
             ("inn", r.Inn), ("address", r.Address), ("email", r.Email));
         return await GetAsync(id);
+    }
+
+    // у юрлица и УК ИНН обязателен и из 10 цифр, у физлица — 12 цифр или пусто
+    public static void CheckInn(string clientType, string? inn)
+    {
+        if (clientType != "individual" && inn?.Length != 10)
+        {
+            throw ApiException.Field(nameof(ClientSaveRequest.Inn), "Для юридического лица и УК нужен ИНН из 10 цифр");
+        }
+        if (clientType == "individual" && inn != null && inn.Length != 12)
+        {
+            throw ApiException.Field(nameof(ClientSaveRequest.Inn), "ИНН физического лица — 12 цифр");
+        }
     }
 
     // тип и ИНН после создания не меняются (так устроена процедура sp_client_update)
