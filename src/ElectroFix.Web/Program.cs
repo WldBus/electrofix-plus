@@ -1,6 +1,7 @@
 using ElectroFix.Web.Infrastructure;
 
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 // Сайт для клиентов и сотрудников (приёмщик, мастер, закупщик). Своей базы нет:
@@ -62,6 +63,17 @@ builder.Services.AddControllersWithViews(o =>
 });
 
 var app = builder.Build();
+
+// На Render перед приложением стоит прокси: к нему запрос приходит по HTTPS, а ко мне уже по HTTP.
+// Беру настоящую схему и IP из X-Forwarded-*, иначе cookie Secure и редиректы ломаются.
+// Адресов прокси Render я не знаю, поэтому списки доверенных очищаю (снаружи в контейнер не попасть)
+var forwarded = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+};
+forwarded.KnownIPNetworks.Clear();
+forwarded.KnownProxies.Clear();
+app.UseForwardedHeaders(forwarded);
 
 if (!app.Environment.IsDevelopment())
 {

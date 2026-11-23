@@ -3,6 +3,7 @@ using ElectroFix.Shared;
 
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.HttpOverrides;
 
 // Админ-панель. Своей базы у неё нет: все данные берёт и меняет через Api по HTTP,
 // а статистику для графиков — у сервиса ElectroFix.Stats
@@ -70,6 +71,17 @@ builder.Services.AddControllersWithViews(o =>
 });
 
 var app = builder.Build();
+
+// На Render перед приложением стоит прокси: к нему запрос приходит по HTTPS, а ко мне уже по HTTP.
+// Беру настоящую схему и IP из X-Forwarded-*, иначе cookie Secure и редиректы ломаются.
+// Адресов прокси Render я не знаю, поэтому списки доверенных очищаю (снаружи в контейнер не попасть)
+var forwarded = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+};
+forwarded.KnownIPNetworks.Clear();
+forwarded.KnownProxies.Clear();
+app.UseForwardedHeaders(forwarded);
 
 if (!app.Environment.IsDevelopment())
 {

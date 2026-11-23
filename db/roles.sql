@@ -40,3 +40,20 @@ GRANT SELECT ON v_stats_summary,
                 v_stats_top_services,
                 v_stats_top_parts
       TO electrofix_stats;
+
+-- Только для Supabase (локально ролей anon и authenticated нет, блок просто пропустится).
+-- У этих ролей Supabase по умолчанию даёт права на всё в public — через них работает Data API.
+-- Data API я выключаю, но права тоже забираю: к данным должен быть один путь — через мой Api.
+-- Представления RLS не закрывает, поэтому без этого REVOKE они были бы видны через Data API
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
+        REVOKE ALL ON ALL TABLES IN SCHEMA public FROM anon, authenticated;
+        REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM anon, authenticated;
+        REVOKE ALL ON ALL ROUTINES IN SCHEMA public FROM anon, authenticated;
+        -- и для таблиц, которые появятся в следующих миграциях
+        ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON TABLES FROM anon, authenticated;
+        ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON SEQUENCES FROM anon, authenticated;
+        ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON ROUTINES FROM anon, authenticated;
+    END IF;
+END $$;

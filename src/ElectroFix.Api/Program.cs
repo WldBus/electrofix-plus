@@ -5,10 +5,13 @@ using ElectroFix.Api.Data;
 using ElectroFix.Api.Services;
 using ElectroFix.Shared;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,6 +28,11 @@ builder.Services.AddSingleton<AppUserInterceptor>();
 
 // строка подключения: локально из user-secrets, на Render из переменной ConnectionStrings__Default
 var connectionString = builder.Configuration.GetConnectionString("Default");
+if (!string.IsNullOrEmpty(connectionString))
+{
+    // Kerberos (GSS) мне не нужен, а без этого Npgsql в Docker пишет в лог ошибку про libgssapi
+    connectionString = new NpgsqlConnectionStringBuilder(connectionString) { GssEncryptionMode = GssEncryptionMode.Disable }.ConnectionString;
+}
 builder.Services.AddDbContext<AppDbContext>((sp, o) => o
     .UseNpgsql(connectionString)
     .UseSnakeCaseNamingConvention()
@@ -132,6 +140,17 @@ builder.Services.AddSwaggerGen(o =>
 });
 
 var app = builder.Build();
+
+// На Render перед приложением стоит прокси: к нему запрос приходит по HTTPS, а ко мне уже по HTTP.
+// Беру настоящую схему и IP из X-Forwarded-*, иначе cookie Secure и редиректы ломаются.
+// Адресов прокси Render я не знаю, поэтому списки доверенных очищаю (снаружи в контейнер не попасть)
+var forwarded = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+};
+forwarded.KnownIPNetworks.Clear();
+forwarded.KnownProxies.Clear();
+app.UseForwardedHeaders(forwarded);
 
 app.UseMiddleware<ErrorMiddleware>();
 

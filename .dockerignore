@@ -1,0 +1,11 @@
+# в образ не нужно: результаты сборки, git, настройки IDE, тесты
+**/bin/
+**/obj/
+**/.vs/
+.idea/
+.git/
+.github/
+tests/
+db/
+**/*.user
+**/appsettings.Development.json

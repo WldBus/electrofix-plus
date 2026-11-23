@@ -4,6 +4,7 @@ using ElectroFix.Shared;
 using ElectroFix.Stats;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.IdentityModel.Tokens;
 
 using Npgsql;
@@ -25,7 +26,9 @@ if (string.IsNullOrEmpty(connectionString))
 {
     throw new InvalidOperationException("Не задан ConnectionStrings:Stats. См. README, раздел про секреты");
 }
-builder.Services.AddSingleton(NpgsqlDataSource.Create(connectionString));
+// GSS (Kerberos) выключаю, как и в Api: иначе в Docker в логе ошибка про libgssapi
+builder.Services.AddSingleton(NpgsqlDataSource.Create(
+    new NpgsqlConnectionStringBuilder(connectionString) { GssEncryptionMode = GssEncryptionMode.Disable }));
 builder.Services.AddScoped<StatsRepository>();
 
 // токен выдаёт основной Api, тут я его только проверяю тем же ключом Jwt__Key
@@ -50,6 +53,17 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+
+// На Render перед приложением стоит прокси: к нему запрос приходит по HTTPS, а ко мне уже по HTTP.
+// Беру настоящую схему и IP из X-Forwarded-*, иначе cookie Secure и редиректы ломаются.
+// Адресов прокси Render я не знаю, поэтому списки доверенных очищаю (снаружи в контейнер не попасть)
+var forwarded = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+};
+forwarded.KnownIPNetworks.Clear();
+forwarded.KnownProxies.Clear();
+app.UseForwardedHeaders(forwarded);
 
 app.UseAuthentication();
 app.UseAuthorization();
