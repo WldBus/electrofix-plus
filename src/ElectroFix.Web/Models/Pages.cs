@@ -80,3 +80,20 @@ public class ToIssuePage
 }
 
 public record BelowMinItem(PartDto Part, decimal Available);
+
+// главная: прайс, проверка статуса ремонта и заявка без регистрации
+public class HomePage
+{
+    public List<ServiceDto> Services { get; init; } = [];
+    public RepairStatusQuery StatusQuery { get; init; } = new();
+    public RepairStatusDto? Status { get; set; }
+    public RepairRequestSaveRequest Request { get; init; } = new();
+
+    // какую из двух форм отправили: общую ошибку от Api показываю только под ней
+    public string? Posted { get; init; }
+
+    // работы для любой техники (диагностика) показываю отдельной строкой над прайсом
+    public IEnumerable<ServiceDto> Common => Services.Where(s => s.Category == ServiceGroups.Common);
+
+    public IEnumerable<ServiceDto> InGroup(string group) => Services.Where(s => s.Category == group);
+}

@@ -1,19 +1,53 @@
 ﻿// Графики на Chart.js. Данные кладу в страницу из C#, тут только общее оформление
-const efColors = ['#2563eb', '#16a34a', '#f59e0b', '#dc2626', '#7c3aed', '#0891b2', '#db2777', '#65a30d', '#ea580c', '#64748b'];
+// Палитра графиков: приглушённые цвета, которые читаются и на светлом, и на тёмном фоне.
+// Во вьюхах цвет задаю именем (color: 'green'), чтобы не размазывать hex по страницам
+const efPalette = {
+    blue: '#3B7DB0', green: '#3E9466', amber: '#D9A21B', red: '#C8524A', violet: '#7C6CC0',
+    teal: '#2E9A9A', slate: '#7F8A90', orange: '#CC7A33', pink: '#B85C8A', olive: '#8A9A3B',
+};
+const efColors = Object.values(efPalette);
+
+function efVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+// подписи и сетка графиков берут цвета из CSS-переменных текущей темы
+function efChartTheme() {
+    if (typeof Chart === 'undefined') {
+        return;
+    }
+    Chart.defaults.color = efVar('--ef-muted');
+    Chart.defaults.borderColor = efVar('--ef-line');
+    Chart.defaults.font.family = '"IBM Plex Sans", system-ui, sans-serif';
+    Object.values(Chart.instances).forEach(c => {
+        // у кольцевых диаграмм граница сегментов — под цвет карточки
+        if (c.config.type === 'doughnut') {
+            c.data.datasets.forEach(d => d.borderColor = efVar('--ef-surface'));
+        }
+        c.update('none');
+    });
+}
 
 function efChart(id, type, labels, datasets, options) {
     const canvas = document.getElementById(id);
     if (!canvas || typeof Chart === 'undefined') {
         return;
     }
+    efChartTheme();
     datasets.forEach((d, i) => {
-        const color = d.color || efColors[i % efColors.length];
+        const color = efPalette[d.color] || d.color || efColors[i % efColors.length];
         if (type === 'doughnut' || type === 'pie') {
             d.backgroundColor = labels.map((_, j) => efColors[j % efColors.length]);
+            d.borderColor = efVar('--ef-surface');
         } else {
             d.backgroundColor = type === 'line' ? color + '22' : color;
             d.borderColor = color;
             d.tension = 0.3;
+            if (type === 'line') {
+                d.pointRadius = 2;
+            } else {
+                d.borderRadius = 2;
+            }
         }
     });
     new Chart(canvas, {
@@ -22,10 +56,25 @@ function efChart(id, type, labels, datasets, options) {
         options: Object.assign({
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { display: datasets.length > 1 || type === 'doughnut' } },
+            plugins: { legend: { display: datasets.length > 1 || type === 'doughnut', labels: { boxWidth: 12, boxHeight: 12 } } },
         }, options || {}),
     });
 }
+
+// переключатель темы внизу меню; графики перекрашиваю сразу, без перезагрузки
+document.querySelectorAll('[data-theme-toggle]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const root = document.documentElement;
+        const next = root.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark';
+        root.setAttribute('data-bs-theme', next);
+        try {
+            localStorage.setItem('ef-theme', next);
+        } catch (e) {
+            // в приватном режиме не сохранится — не страшно
+        }
+        efChartTheme();
+    });
+});
 
 // случайный пароль для нового сотрудника: 14 символов, есть большие и маленькие буквы, цифры и знаки
 function efGeneratePassword(inputId) {

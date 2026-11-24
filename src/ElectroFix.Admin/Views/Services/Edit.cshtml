@@ -13,7 +13,15 @@
         </div>
         <div class="mb-3">
             <label asp-for="Category" class="form-label">Категория</label>
-            <input asp-for="Category" class="form-control" />
+            @* на сайте прайс делится на эти группы; другая категория на сайт не попадёт *@
+            <input asp-for="Category" class="form-control" list="serviceGroups" />
+            <datalist id="serviceGroups">
+                @foreach (var g in ServiceGroups.All.Append(ServiceGroups.Common))
+                {
+                    <option value="@g"></option>
+                }
+            </datalist>
+            <div class="form-text">На сайте прайс делится на группы: @string.Join(", ", ServiceGroups.All). «@ServiceGroups.Common» — работы для любой техники</div>
             <span asp-validation-for="Category" class="text-danger small"></span>
         </div>
         <div class="row">

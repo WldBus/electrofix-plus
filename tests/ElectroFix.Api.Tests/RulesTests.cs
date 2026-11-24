@@ -267,4 +267,36 @@ public class RulesTests
         Assert.IsType<BadRequestObjectResult>(
             ValidationResponse.Create(new ActionContext(new DefaultHttpContext(), new RouteData(), new ActionDescriptor(), broken)));
     }
+
+    // ---------- заявки и статус ремонта с сайта ----------
+
+    [Theory]
+    [InlineData("ЗН-2026-00012", "ЗН-2026-00012")]
+    [InlineData("зн 2026 12", "ЗН-2026-00012")]
+    [InlineData("2026-3", "ЗН-2026-00003")]
+    [InlineData("12", null)]
+    [InlineData("", null)]
+    public void ReceiptNumber_IsNormalized(string input, string? expected) =>
+        Assert.Equal(expected, RepairStages.Normalize(input));
+
+    [Fact]
+    public void RepairStages_NewIsDiagnostics_AssignedIsRepair_CancelledIsOutside()
+    {
+        Assert.Equal(0, RepairStages.IndexOf("new"));
+        Assert.Equal(RepairStages.IndexOf("in_progress"), RepairStages.IndexOf("assigned"));
+        Assert.Equal(RepairStages.Public.Length - 1, RepairStages.IndexOf("closed"));
+        Assert.Equal(-1, RepairStages.IndexOf("cancelled"));
+    }
+
+    [Fact]
+    public void Request_SelfNeedsOurBranch_CourierNeedsAddress()
+    {
+        RequestsService.CheckDelivery("self", Branches.All[1], null);
+        RequestsService.CheckDelivery("courier", null, "Москва, ул. Тестовая, 1");
+
+        var noBranch = Assert.Throws<ApiException>(() => RequestsService.CheckDelivery("self", "Санкт-Петербург", null));
+        Assert.True(noBranch.Errors!.ContainsKey("branch"));
+        var noAddress = Assert.Throws<ApiException>(() => RequestsService.CheckDelivery("master_visit", null, " "));
+        Assert.True(noAddress.Errors!.ContainsKey("address"));
+    }
 }

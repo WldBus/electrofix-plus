@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text.Json.Serialization.Metadata;
+using System.Threading.RateLimiting;
 using ElectroFix.Api.Common;
 using ElectroFix.Api.Data;
 using ElectroFix.Api.Services;
@@ -113,6 +114,21 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<SecurityLog>();
 builder.Services.AddScoped<WorkflowService>();
 builder.Services.AddScoped<MyService>();
+builder.Services.AddScoped<RequestsService>();
+builder.Services.AddMemoryCache();
+
+// Открытые методы (заявка, статус ремонта) вызываются без входа — ограничиваю частоту по IP,
+// чтобы заявками нельзя было завалить базу. Сайт ходит сюда со своего адреса, поэтому запас большой,
+// а у самого сайта свой, более строгий лимит по IP посетителя
+builder.Services.AddRateLimiter(o =>
+{
+    o.RejectionStatusCode = 429;
+    o.OnRejected = (context, token) => new ValueTask(context.HttpContext.Response.WriteAsJsonAsync(
+        new ErrorResponse("Слишком много запросов. Подождите минуту и попробуйте снова"), token));
+    o.AddPolicy("public", http => RateLimitPartition.GetFixedWindowLimiter(
+        http.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 60, Window = TimeSpan.FromMinutes(1) }));
+});
 
 // ФИО в ответах админу скрываю (см. PersonalDataJson)
 builder.Services.AddOptions<Microsoft.AspNetCore.Mvc.JsonOptions>()
@@ -168,6 +184,7 @@ app.UseSwagger();
 app.UseSwaggerUI();
 
 app.UseAuthentication();
+app.UseRateLimiter();
 
 // запрос на несуществующий адрес Api: отвечаю в общем формате и пишу в журнал —
 // так видно, если кто-то перебирает адреса

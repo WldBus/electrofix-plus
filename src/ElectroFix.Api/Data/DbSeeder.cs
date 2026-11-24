@@ -8,7 +8,7 @@ public static class DbSeeder
     private static readonly string[] TablesWithTriggers =
     [
         "users", "clients", "devices", "checkins", "work_orders", "order_services",
-        "order_parts", "invoices", "payments", "warranty_cases", "stock_moves",
+        "order_parts", "invoices", "payments", "warranty_cases", "stock_moves", "repair_requests",
     ];
 
     public static void Seed(AppDbContext db)

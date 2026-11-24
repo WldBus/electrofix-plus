@@ -1,97 +1,323 @@
-@model PagedResult<ServiceDto>
+@model HomePage
 @using System.Security.Claims
+@using ElectroFix.Web.Models
 @{
     ViewData["Title"] = "Ремонт техники";
     ViewData["HideTitle"] = true;
-    var q = (CatalogListQuery)ViewBag.Query;
-    var categories = (List<string>)ViewBag.Categories;
     var role = User.FindFirstValue(ClaimTypes.Role);
+    var diagnostics = Model.Common.FirstOrDefault(s => s.Name == "Диагностика");
+    var maxWarranty = Model.Services.Count == 0 ? 0 : Model.Services.Max(s => s.WarrantyMonths);
+    var status = Model.Status;
+    var current = status == null ? -1 : RepairStages.IndexOf(status.Status);
+    // вкладка прайса: группа выбранной работы, иначе первая
+    var pickedGroup = Model.Services.FirstOrDefault(s => s.ServiceId == Model.Request.ServiceId)?.Category;
+    var activeGroup = ServiceGroups.All.Contains(pickedGroup) ? pickedGroup : ServiceGroups.All[0];
+    var r = Model.Request;
+    var deviceTypes = new[]
+    {
+        "Смартфон", "Ноутбук", "Компьютер", "Стиральная машина", "Посудомоечная машина", "Холодильник",
+        "Телевизор", "Электроплита", "Микроволновая печь", "Пылесос", "Кофемашина",
+    };
+    // что делается на каждом этапе — подписи к тем же этапам, что видны в статусе ремонта
+    var stageNotes = new Dictionary<string, string>
+    {
+        ["diagnostics"] = "Мастер находит причину поломки",
+        ["estimate"] = "Пишем, какие работы и запчасти нужны и сколько это стоит",
+        ["approved"] = "Вы решаете, что делать. Без согласия не ремонтируем",
+        ["in_progress"] = "Ремонтируем, запчасти берём со склада или заказываем",
+        ["pdi"] = "Проверяем технику после ремонта",
+        ["ready"] = "Сообщаем, что можно забирать",
+        ["closed"] = "Оплата при получении, гарантия на работу",
+    };
 }
-<section class="hero p-4 p-md-5 mb-4">
-    <h1 class="display-6 fw-semibold">Ремонт бытовой техники и электроники</h1>
-    <p class="lead mb-4">Стиральные и посудомоечные машины, холодильники, ноутбуки, телевизоры. Диагностика, смета до начала работ и гарантия на ремонт.</p>
-    @if (role == null)
-    {
-        <a class="btn btn-warning btn-lg" asp-controller="Cabinet" asp-action="Book"><i class="bi bi-calendar-plus"></i> Записаться на ремонт</a>
-        <a class="btn btn-outline-light btn-lg ms-sm-2 mt-2 mt-sm-0" asp-controller="Account" asp-action="Register">Создать кабинет</a>
-    }
-    else if (role == RoleCodes.Client)
-    {
-        <a class="btn btn-warning btn-lg" asp-controller="Cabinet" asp-action="Book"><i class="bi bi-calendar-plus"></i> Записаться на ремонт</a>
-    }
-</section>
 
-<div class="row g-3 mb-4">
-    <div class="col-md-4">
-        <div class="card p-3 h-100"><i class="bi bi-search fs-3 text-primary"></i><b class="mt-2">1. Запись и диагностика</b>
-            <span class="text-muted small">Записываетесь онлайн, приносите технику в удобный филиал, мастер ищет причину.</span></div>
-    </div>
-    <div class="col-md-4">
-        <div class="card p-3 h-100"><i class="bi bi-list-check fs-3 text-primary"></i><b class="mt-2">2. Смета в кабинете</b>
-            <span class="text-muted small">Вы сами отмечаете, какие работы и запчасти согласны оплатить. Без вашего согласия не ремонтируем.</span></div>
-    </div>
-    <div class="col-md-4">
-        <div class="card p-3 h-100"><i class="bi bi-shield-check fs-3 text-primary"></i><b class="mt-2">3. Ремонт с гарантией</b>
-            <span class="text-muted small">Статус ремонта видно в кабинете. Оплата при получении в филиале.</span></div>
-    </div>
-</div>
-
-<h2 class="h4 mb-3">Цены на работы</h2>
-<div class="card">
-    <form method="get" class="row g-2 p-3 border-bottom">
-        <div class="col-12 col-md-5">
-            <input name="search" value="@q.Search" class="form-control" placeholder="Поиск работы, например «замена»" />
-        </div>
-        <div class="col-8 col-md-4">
-            <select name="category" class="form-select" data-autosubmit>
-                <option value="">Все категории</option>
-                @foreach (var c in categories)
-                {
-                    <option value="@c" selected="@(c == q.Category)">@c</option>
-                }
-            </select>
-        </div>
-        <input type="hidden" name="sort" value="@q.Sort" />
-        <div class="col-4 col-md-3 d-flex gap-2">
-            <button class="btn btn-primary flex-grow-1"><i class="bi bi-search"></i> Найти</button>
-            @if (!string.IsNullOrEmpty(q.Search) || !string.IsNullOrEmpty(q.Category))
+<section class="ef-hero">
+    <div class="ef-hero-text">
+        <h1>Ремонт смартфонов, ноутбуков и&nbsp;бытовой техники</h1>
+        <p class="ef-lead">
+            Два филиала в Москве: @string.Join(" и ", Branches.All.Select(b => b.Replace("Москва, ", ""))).
+            @if (diagnostics != null)
             {
-                <a asp-action="Index" class="btn btn-outline-secondary" title="Сбросить"><i class="bi bi-x-lg"></i></a>
+                <text>Диагностика — @HtmlHelpers.Price(diagnostics.Rate * diagnostics.NormHours),</text>
+            }
+            смета до начала работ@(maxWarranty > 0 ? $", гарантия до {maxWarranty} мес" : "").
+        </p>
+        <div class="ef-hero-actions">
+            <a class="btn btn-primary btn-lg" href="#request">Оставить заявку</a>
+            @if (role == RoleCodes.Client)
+            {
+                <a class="btn btn-outline-secondary btn-lg" asp-controller="Cabinet" asp-action="Book">Записаться через кабинет</a>
+            }
+            else
+            {
+                <a class="btn btn-outline-secondary btn-lg" href="tel:+74950000000">+7 495 000-00-00</a>
             }
         </div>
-    </form>
-    @if (Model.Items.Count == 0)
+    </div>
+
+    @* проверка статуса — «отрывная» часть квитанции: номер и 4 последние цифры телефона *@
+    <div id="status" class="ef-ticket" aria-labelledby="statusTitle">
+        <h2 id="statusTitle" class="ef-ticket-title">Статус ремонта</h2>
+        <form asp-action="Status" asp-fragment="status" method="post" class="ef-ticket-form" novalidate>
+            <div>
+                <label asp-for="StatusQuery.Number" class="form-label">Номер квитанции</label>
+                <input asp-for="StatusQuery.Number" class="form-control ef-mono" placeholder="ЗН-2026-00012"
+                       autocomplete="off" spellcheck="false" />
+                <span asp-validation-for="StatusQuery.Number" class="ef-field-error"></span>
+            </div>
+            <div class="ef-ticket-phone">
+                <label asp-for="StatusQuery.Phone" class="form-label">4 последние цифры телефона</label>
+                <input asp-for="StatusQuery.Phone" class="form-control ef-mono" inputmode="numeric" maxlength="4"
+                       placeholder="0000" autocomplete="off" />
+                <span asp-validation-for="StatusQuery.Phone" class="ef-field-error"></span>
+            </div>
+            <button class="btn btn-primary">Проверить</button>
+        </form>
+        @if (Model.Posted == "status")
+        {
+            <div asp-validation-summary="ModelOnly" class="ef-form-error"></div>
+        }
+        @if (status != null)
+        {
+            <div class="ef-ticket-result" aria-live="polite">
+                <div class="ef-ticket-head">
+                    <span class="ef-mono">@status.Number</span>
+                    <span class="ef-muted">принят @HtmlHelpers.Day(status.OpenedAt)</span>
+                </div>
+                <div class="ef-ticket-device">@status.Device</div>
+                @if (current < 0)
+                {
+                    <p class="mb-0">Ремонт отменён. Технику можно забрать в филиале, где её сдавали.</p>
+                }
+                else
+                {
+                    <p class="ef-ticket-now">
+                        Сейчас: <b>@RepairStages.Public[current].Name</b>
+                        @if (status.Status == "ready")
+                        {
+                            <span>— приходите за техникой</span>
+                        }
+                        else if (status.Status == "closed")
+                        {
+                            <span>@HtmlHelpers.Day(status.ClosedAt)</span>
+                        }
+                    </p>
+                    <ol class="ef-stages ef-stages-compact" aria-label="Этапы ремонта">
+                        @for (var i = 0; i < RepairStages.Public.Length; i++)
+                        {
+                            var css = i < current ? "is-done" : i == current ? "is-current" : "";
+                            <li class="@css" aria-current="@(i == current ? "step" : null)">@RepairStages.Public[i].Name</li>
+                        }
+                    </ol>
+                }
+            </div>
+        }
+        else if (Model.Posted != "status")
+        {
+            <p class="ef-ticket-hint">Номер напечатан на квитанции, которую выдают при приёме техники.</p>
+        }
+    </div>
+</section>
+
+<section id="prices" class="ef-section" aria-labelledby="pricesTitle">
+    <div class="ef-section-head">
+        <h2 id="pricesTitle">Услуги и цены</h2>
+        <p class="ef-muted">Цена указана за работу. Запчасти считаем отдельно — точную сумму вы увидите в смете после диагностики.</p>
+    </div>
+
+    @if (Model.Services.Count == 0)
     {
-        <div class="p-4 text-center text-muted"><i class="bi bi-inbox fs-2 d-block"></i>Ничего не нашлось. Попробуйте изменить поиск.</div>
+        <p class="ef-muted">Прайс сейчас не загрузился. Позвоните нам, и мы назовём цену по телефону.</p>
     }
     else
     {
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
-                <tr>
-                    <th>@Html.SortHeader("name", "Работа")</th>
-                    <th class="d-none d-md-table-cell">@Html.SortHeader("category", "Категория")</th>
-                    <th class="text-end d-none d-sm-table-cell">@Html.SortHeader("hours", "Время, ч")</th>
-                    <th class="text-end">@Html.SortHeader("rate", "Цена")</th>
-                    <th class="text-end d-none d-md-table-cell">Гарантия</th>
-                </tr>
-                </thead>
-                <tbody>
-                @foreach (var s in Model.Items)
+        <div class="ef-price">
+            <div class="ef-tabs" role="tablist" aria-label="Категории техники">
+                @foreach (var g in ServiceGroups.All)
                 {
-                    <tr>
-                        <td>@s.Name<div class="small text-muted d-md-none">@s.Category</div></td>
-                        <td class="d-none d-md-table-cell">@s.Category</td>
-                        <td class="text-end d-none d-sm-table-cell">@HtmlHelpers.Num(s.NormHours)</td>
-                        <td class="text-end text-nowrap">от @HtmlHelpers.Money(s.Rate * s.NormHours)</td>
-                        <td class="text-end d-none d-md-table-cell">@(s.WarrantyMonths == 0 ? "–" : s.WarrantyMonths + " мес.")</td>
-                    </tr>
+                    var id = "group-" + Array.IndexOf(ServiceGroups.All, g);
+                    <button type="button" role="tab" id="@(id)-tab" class="ef-tab" data-tab="@id"
+                            aria-controls="@id" aria-selected="@(g == activeGroup ? "true" : "false")">
+                        @g <span class="ef-tab-count">@Model.InGroup(g).Count()</span>
+                    </button>
                 }
-                </tbody>
-            </table>
+            </div>
+            @foreach (var g in ServiceGroups.All)
+            {
+                var id = "group-" + Array.IndexOf(ServiceGroups.All, g);
+                <div id="@id" role="tabpanel" aria-labelledby="@(id)-tab" class="ef-tabpanel @(g == activeGroup ? "is-active" : "")">
+                    <h3 class="ef-tabpanel-title">@g</h3>
+                    <partial name="_PriceTable" model="(Model.InGroup(g), Model.Request.ServiceId)" />
+                </div>
+            }
+            @if (Model.Common.Any())
+            {
+                <div class="ef-price-common">
+                    <h3 class="ef-tabpanel-title d-block">Для любой техники</h3>
+                    <partial name="_PriceTable" model="(Model.Common, Model.Request.ServiceId)" />
+                </div>
+            }
         </div>
     }
-    <partial name="_Pager" model="new PagerModel(Model.Page, Model.Size, Model.Total)" />
-</div>
-<p class="small text-muted mt-2">Цена работы = норма времени × ставка. Точную стоимость с запчастями вы увидите в смете после диагностики.</p>
+</section>
+
+<section id="how" class="ef-section" aria-labelledby="howTitle">
+    <div class="ef-section-head">
+        <h2 id="howTitle">Как мы работаем</h2>
+        <p class="ef-muted">Эти же этапы вы увидите, когда проверите статус ремонта по номеру квитанции.</p>
+    </div>
+    <ol class="ef-stages ef-stages-steps">
+        @foreach (var (code, name) in RepairStages.Public)
+        {
+            <li>
+                <b>@name</b>
+                <span>@stageNotes[code]</span>
+            </li>
+        }
+    </ol>
+</section>
+
+<section id="request" class="ef-section" aria-labelledby="requestTitle">
+    <div class="ef-section-head">
+        <h2 id="requestTitle">Заявка на ремонт</h2>
+        <p class="ef-muted">Регистрация не нужна. Приёмщик перезвонит, уточнит детали и запишет на удобное время.</p>
+    </div>
+
+    @if (TempData["RequestSent"] is string sent)
+    {
+        @* после отправки форму не показываю, чтобы случайно не отправить вторую такую же *@
+        <div class="ef-done" role="status">
+            <i class="bi bi-check2-circle" aria-hidden="true"></i>
+            <div>
+                <p class="mb-1">@sent</p>
+                <a asp-action="Index" asp-fragment="request">Оставить ещё одну заявку</a>
+            </div>
+        </div>
+    }
+    else
+    {
+    <div class="ef-request">
+        <form asp-action="RequestRepair" asp-fragment="request" method="post" class="ef-panel ef-request-form" novalidate>
+            @if (Model.Posted == "request")
+            {
+                <div asp-validation-summary="ModelOnly" class="ef-form-error"></div>
+            }
+            <fieldset>
+                <legend>Техника</legend>
+                <div class="row g-3">
+                    <div class="col-sm-5">
+                        <label asp-for="Request.DeviceType" class="form-label">Что сломалось</label>
+                        <input asp-for="Request.DeviceType" class="form-control" list="deviceTypes" placeholder="Ноутбук" />
+                        <datalist id="deviceTypes">
+                            @foreach (var t in deviceTypes)
+                            {
+                                <option value="@t"></option>
+                            }
+                        </datalist>
+                        <span asp-validation-for="Request.DeviceType" class="ef-field-error"></span>
+                    </div>
+                    <div class="col-sm-7">
+                        <label asp-for="Request.DeviceModel" class="form-label">Марка и модель</label>
+                        <input asp-for="Request.DeviceModel" class="form-control" placeholder="Lenovo IdeaPad 5" />
+                        <span asp-validation-for="Request.DeviceModel" class="ef-field-error"></span>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="Request.Problem" class="form-label">Что случилось</label>
+                        <textarea asp-for="Request.Problem" class="form-control" rows="3"
+                                  placeholder="Не включается после того, как пролили воду"></textarea>
+                        <span asp-validation-for="Request.Problem" class="ef-field-error"></span>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="Request.ServiceId" class="form-label">Работа из прайса <span class="ef-muted">(если знаете)</span></label>
+                        <select asp-for="Request.ServiceId" class="form-select" id="requestService">
+                            <option value="">Не знаю, нужна диагностика</option>
+                            @foreach (var g in ServiceGroups.All.Append(ServiceGroups.Common))
+                            {
+                                <optgroup label="@g">
+                                    @foreach (var s in Model.InGroup(g))
+                                    {
+                                        <option value="@s.ServiceId" selected="@(s.ServiceId == r.ServiceId)">@s.Name — от @HtmlHelpers.Price(s.Rate * s.NormHours)</option>
+                                    }
+                                </optgroup>
+                            }
+                        </select>
+                        <span asp-validation-for="Request.ServiceId" class="ef-field-error"></span>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Как передадите технику</legend>
+                <div class="ef-choice" role="radiogroup">
+                    @foreach (var (code, name) in Labels.DeliveryMethods)
+                    {
+                        <label class="ef-choice-item">
+                            <input type="radio" name="Request.DeliveryMethod" value="@code" checked="@(r.DeliveryMethod == code)"
+                                   data-delivery />
+                            <span>@name</span>
+                        </label>
+                    }
+                </div>
+                <span asp-validation-for="Request.DeliveryMethod" class="ef-field-error"></span>
+                <div class="row g-3 mt-0">
+                    <div class="col-sm-6" data-delivery-for="self">
+                        <label asp-for="Request.Branch" class="form-label">Филиал</label>
+                        <select asp-for="Request.Branch" class="form-select">
+                            @foreach (var b in Branches.All)
+                            {
+                                <option value="@b" selected="@(b == r.Branch)">@b</option>
+                            }
+                        </select>
+                        <span asp-validation-for="Request.Branch" class="ef-field-error"></span>
+                    </div>
+                    <div class="col-12" data-delivery-for="courier master_visit">
+                        <label asp-for="Request.Address" class="form-label">Адрес, откуда забрать технику</label>
+                        <input asp-for="Request.Address" class="form-control" placeholder="Москва, ул. Профсоюзная, д. 10, кв. 5" />
+                        <span asp-validation-for="Request.Address" class="ef-field-error"></span>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Контакты</legend>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label asp-for="Request.ClientName" class="form-label">Как к вам обращаться</label>
+                        <input asp-for="Request.ClientName" class="form-control" autocomplete="name" />
+                        <span asp-validation-for="Request.ClientName" class="ef-field-error"></span>
+                    </div>
+                    <div class="col-sm-6">
+                        <label asp-for="Request.Phone" class="form-label">Телефон</label>
+                        <input asp-for="Request.Phone" class="form-control" type="tel" autocomplete="tel" placeholder="+7 900 123-45-67" />
+                        <span asp-validation-for="Request.Phone" class="ef-field-error"></span>
+                    </div>
+                    <div class="col-sm-6">
+                        <label asp-for="Request.Email" class="form-label">Email <span class="ef-muted">(необязательно)</span></label>
+                        <input asp-for="Request.Email" class="form-control" type="email" autocomplete="email" />
+                        <span asp-validation-for="Request.Email" class="ef-field-error"></span>
+                    </div>
+                </div>
+            </fieldset>
+
+            <div class="ef-request-submit">
+                <button class="btn btn-primary btn-lg">Отправить заявку</button>
+                <p class="ef-muted mb-0">Нажимая кнопку, вы соглашаетесь на обработку персональных данных для связи по ремонту.</p>
+            </div>
+        </form>
+
+        <aside class="ef-request-aside">
+            <h3>Что будет дальше</h3>
+            <p>Приёмщик позвонит, уточнит неисправность и назовёт примерную цену. Если технику привезёт курьер или приедет мастер, договоримся о времени.</p>
+            <p>При приёме выдаём квитанцию с номером — по нему можно следить за ремонтом на этой странице.</p>
+            @if (role == null)
+            {
+                <p class="mb-0">Есть личный кабинет? <a asp-controller="Account" asp-action="Login">Войдите</a> и запишитесь на приём сами, там же видна смета.</p>
+            }
+            else if (role == RoleCodes.Client)
+            {
+                <p class="mb-0">Вы вошли в кабинет — можно сразу <a asp-controller="Cabinet" asp-action="Book">записаться на приём</a>.</p>
+            }
+        </aside>
+    </div>
+    }
+</section>

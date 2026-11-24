@@ -80,6 +80,21 @@ public static class Labels
         ["write_off"] = "Списание",
     };
 
+    public static readonly Dictionary<string, string> RequestStatuses = new()
+    {
+        ["new"] = "Новая",
+        ["processing"] = "В работе",
+        ["done"] = "Оформлена",
+        ["rejected"] = "Отклонена",
+    };
+
+    public static readonly Dictionary<string, string> DeliveryMethods = new()
+    {
+        ["self"] = "Принесу сам",
+        ["courier"] = "Курьер заберёт",
+        ["master_visit"] = "Выезд мастера",
+    };
+
     public static readonly Dictionary<string, string> AuditActions = new()
     {
         ["INSERT"] = "Добавление",
@@ -109,6 +124,7 @@ public static class Labels
         ["invoices"] = "Счета",
         ["payments"] = "Платежи",
         ["stock_moves"] = "Движения склада",
+        ["repair_requests"] = "Заявки с сайта",
         ["http"] = "Запросы к Api",
     };
 

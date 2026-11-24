@@ -44,6 +44,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     });
 // главная с прайсом открыта всем, остальные контроллеры помечены [Authorize(Roles = ...)]
 builder.Services.AddAuthorization();
+builder.Services.AddRateLimiter(SiteLimits.Add);
 
 builder.Services.AddControllersWithViews(o =>
 {
@@ -82,6 +83,7 @@ if (!app.Environment.IsDevelopment())
 
 app.UseStaticFiles();
 app.UseRouting();
+app.UseRateLimiter();
 app.UseRequestLocalization("ru-RU");
 app.UseAuthentication();
 app.UseAuthorization();

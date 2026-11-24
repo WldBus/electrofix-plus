@@ -5,38 +5,69 @@
     string Active(string c, string? a = null) =>
         controller == c && (a == null || action == a) ? "active" : "";
     var role = User.FindFirstValue(ClaimTypes.Role);
+    // разделы главной: с других страниц ведут на главную с якорем
+    var home = Url.Action("Index", "Home");
 }
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-bs-theme="light">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] – ElectroFix+</title>
+    @* тема: выбранная вручную (localStorage) или как в системе. Ставлю до загрузки стилей, чтобы страница не мигала *@
+    <script>
+        (function () {
+            var t = null;
+            try { t = localStorage.getItem('ef-theme'); } catch (e) { }
+            if (t !== 'light' && t !== 'dark') {
+                t = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            }
+            document.documentElement.setAttribute('data-bs-theme', t);
+            // по этому классу CSS понимает, что вкладки прайса будут работать
+            document.documentElement.classList.add('ef-js');
+        })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" />
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body class="d-flex flex-column min-vh-100">
 <div id="ef-loading" class="ef-loading" hidden></div>
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-    <div class="container">
-        <a class="navbar-brand" asp-controller="Home" asp-action="Index"><i class="bi bi-lightning-charge-fill text-warning"></i> ElectroFix+</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-label="Меню">
-            <span class="navbar-toggler-icon"></span>
+<a class="visually-hidden-focusable ef-skip" href="#main">К содержимому</a>
+<header class="ef-header">
+    <nav class="navbar navbar-expand-lg container" aria-label="Основное меню">
+        <a class="ef-brand" href="@home">ElectroFix+</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
+                aria-controls="mainNav" aria-expanded="false" aria-label="Меню">
+            <i class="bi bi-list"></i>
         </button>
         <div class="collapse navbar-collapse" id="mainNav">
             <ul class="navbar-nav me-auto">
-                <li class="nav-item"><a class="nav-link @Active("Home")" asp-controller="Home" asp-action="Index">Цены</a></li>
-                @* меню зависит от роли: каждый видит только своё рабочее место *@
+                @* сотрудникам разделы для клиентов не нужны — у них своё рабочее место *@
+                @if (role == null)
+                {
+                    <li class="nav-item"><a class="nav-link" href="@home#prices">Услуги и цены</a></li>
+                    <li class="nav-item"><a class="nav-link" href="@home#status">Статус ремонта</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#contacts">Контакты</a></li>
+                }
+                else if (role == RoleCodes.Client)
+                {
+                    @* клиенту статус виден в кабинете, а места в шапке мало — оставляю только цены *@
+                    <li class="nav-item"><a class="nav-link" href="@home#prices">Цены</a></li>
+                }
                 @switch (role)
                 {
                     case RoleCodes.Client:
-                        <li class="nav-item"><a class="nav-link @Active("Cabinet", "Index")" asp-controller="Cabinet" asp-action="Index">Кабинет</a></li>
-                        <li class="nav-item"><a class="nav-link @Active("Cabinet", "Devices")" asp-controller="Cabinet" asp-action="Devices">Мои устройства</a></li>
+                        <li class="nav-item ef-nav-sep"><a class="nav-link @Active("Cabinet", "Index")" asp-controller="Cabinet" asp-action="Index">Кабинет</a></li>
+                        <li class="nav-item"><a class="nav-link @Active("Cabinet", "Devices")" asp-controller="Cabinet" asp-action="Devices">Устройства</a></li>
                         <li class="nav-item"><a class="nav-link @Active("Cabinet", "Checkins")" asp-controller="Cabinet" asp-action="Checkins">Записи</a></li>
                         <li class="nav-item"><a class="nav-link @Active("Cabinet", "Orders")" asp-controller="Cabinet" asp-action="Orders">Ремонты</a></li>
                         break;
                     case RoleCodes.Receptionist:
+                        <li class="nav-item"><a class="nav-link @Active("Reception", "Requests")" asp-controller="Reception" asp-action="Requests">Заявки</a></li>
                         <li class="nav-item"><a class="nav-link @Active("Reception", "Index")" asp-controller="Reception" asp-action="Index">Записи</a></li>
                         <li class="nav-item"><a class="nav-link @Active("Reception", "Clients")" asp-controller="Reception" asp-action="Clients">Клиенты</a></li>
                         <li class="nav-item"><a class="nav-link @Active("Reception", "Orders")" asp-controller="Reception" asp-action="Orders">Заказ-наряды</a></li>
@@ -52,29 +83,34 @@
                         break;
                 }
             </ul>
-            @if (User.Identity?.IsAuthenticated == true)
-            {
-                <div class="d-flex align-items-center gap-2 text-white-50 small">
-                    <i class="bi bi-person-circle"></i> <span class="text-white">@User.Identity.Name</span>
-                    <form asp-controller="Account" asp-action="Logout" method="post" class="ms-2">
-                        <button class="btn btn-sm btn-outline-light"><i class="bi bi-box-arrow-right"></i> Выйти</button>
+            <div class="ef-header-actions">
+                <button type="button" class="btn ef-theme-btn" data-theme-toggle aria-label="Переключить тему" title="Переключить тему">
+                    <i class="bi bi-moon ef-if-light"></i><i class="bi bi-sun ef-if-dark"></i>
+                </button>
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <span class="ef-user" title="Вы вошли как @User.Identity.Name">@User.Identity.Name</span>
+                    <form asp-controller="Account" asp-action="Logout" method="post">
+                        <button class="btn btn-sm btn-outline-secondary">Выйти</button>
                     </form>
-                </div>
-            }
-            else
-            {
-                <div class="d-flex gap-2">
-                    <a class="btn btn-sm btn-outline-light" asp-controller="Account" asp-action="Login">Войти</a>
-                    <a class="btn btn-sm btn-warning" asp-controller="Account" asp-action="Register">Регистрация</a>
-                </div>
-            }
+                }
+                else
+                {
+                    <a class="btn btn-sm btn-outline-secondary" asp-controller="Account" asp-action="Login">Войти</a>
+                }
+                @* клиент записывается сам через кабинет, заявка нужна тем, у кого кабинета нет *@
+                @if (role == null)
+                {
+                    <a class="btn btn-sm btn-primary" href="@home#request">Оставить заявку</a>
+                }
+            </div>
         </div>
-    </div>
-</nav>
-<main class="container py-4 flex-grow-1">
+    </nav>
+</header>
+<main id="main" class="container py-4 flex-grow-1">
     @if (ViewData["Title"] is string title && ViewData["HideTitle"] is not true)
     {
-        <h1 class="h3 mb-4">@title</h1>
+        <h1 class="ef-page-title">@title</h1>
     }
     @if (TempData["Success"] is string ok)
     {
@@ -93,10 +129,26 @@
     }
     @RenderBody()
 </main>
-<footer class="border-top bg-white py-3 small text-muted">
-    <div class="container d-flex flex-wrap justify-content-between gap-2">
-        <span>© ElectroFix+ — ремонт бытовой техники и электроники</span>
-        <span><i class="bi bi-geo-alt"></i> @string.Join(" · ", Branches.All) · <i class="bi bi-telephone"></i> +7 495 000-00-00</span>
+<footer id="contacts" class="ef-footer">
+    <div class="container ef-footer-grid">
+        <div>
+            <div class="ef-brand">ElectroFix+</div>
+            <p class="ef-muted mb-0">Ремонт смартфонов, ноутбуков и бытовой техники</p>
+        </div>
+        <div>
+            <h2 class="ef-footer-title">Филиалы</h2>
+            <ul class="list-unstyled mb-0">
+                @foreach (var b in Branches.All)
+                {
+                    <li>@b</li>
+                }
+            </ul>
+        </div>
+        <div>
+            <h2 class="ef-footer-title">Телефон</h2>
+            <a class="ef-phone" href="tel:+74950000000">+7 495 000-00-00</a>
+            <p class="ef-muted mb-0">Можно позвонить и спросить про ремонт до заявки</p>
+        </div>
     </div>
 </footer>
 <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>

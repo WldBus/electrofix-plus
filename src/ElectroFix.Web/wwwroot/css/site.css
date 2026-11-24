@@ -1,14 +1,294 @@
+/* Стиль сайта ElectroFix+: спокойный рабочий интерфейс мастерской.
+   Светлый фон, тонкие линии, без теней и градиентов. Цвета задаю переменными,
+   чтобы тёмная тема меняла только их (data-bs-theme на <html>, его ставит скрипт в _Layout) */
+
+:root,
+[data-bs-theme=light] {
+    --ef-bg: #F4F5F3;
+    --ef-surface: #FFFFFF;
+    --ef-surface-2: #ECEEEB;
+    --ef-text: #1E2427;
+    --ef-muted: #5B656B;
+    --ef-line: #D8DCD9;
+    --ef-accent: #185E8C;
+    --ef-accent-rgb: 24, 94, 140;
+    --ef-accent-hover: #134C72;
+    --ef-on-accent: #FFFFFF;
+    --ef-mark: #F2B705;
+    --ef-mark-rgb: 242, 183, 5;
+    --ef-ok: #2E7D4F;
+    --ef-ok-rgb: 46, 125, 79;
+    --ef-danger: #B3261E;
+
+    --bs-body-bg: var(--ef-bg);
+    --bs-body-color: var(--ef-text);
+    --bs-emphasis-color: var(--ef-text);
+    --bs-secondary-color: var(--ef-muted);
+    --bs-tertiary-bg: var(--ef-surface-2);
+    --bs-secondary-bg: var(--ef-surface-2);
+    --bs-border-color: var(--ef-line);
+    --bs-primary: var(--ef-accent);
+    --bs-primary-rgb: var(--ef-accent-rgb);
+    --bs-link-color: var(--ef-accent);
+    --bs-link-color-rgb: var(--ef-accent-rgb);
+    --bs-link-hover-color: var(--ef-accent-hover);
+    --bs-danger: var(--ef-danger);
+    --bs-form-invalid-color: var(--ef-danger);
+    --bs-form-invalid-border-color: var(--ef-danger);
+    --bs-body-font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    --bs-font-monospace: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+    --bs-border-radius: 4px;
+    --bs-border-radius-sm: 3px;
+    --bs-border-radius-lg: 6px;
+    --bs-focus-ring-color: rgba(var(--ef-accent-rgb), .3);
+    color-scheme: light;
+}
+
+[data-bs-theme=dark] {
+    --ef-bg: #14181B;
+    --ef-surface: #1B2125;
+    --ef-surface-2: #232B30;
+    --ef-text: #E3E7E5;
+    --ef-muted: #9AA4A9;
+    --ef-line: #2C3439;
+    --ef-accent: #5FA8D8;
+    --ef-accent-rgb: 95, 168, 216;
+    --ef-accent-hover: #80BCE3;
+    --ef-on-accent: #0E1A22;
+    --ef-ok: #5DBB85;
+    --ef-ok-rgb: 93, 187, 133;
+    --ef-danger: #F08A80;
+
+    --bs-body-bg: var(--ef-bg);
+    --bs-body-color: var(--ef-text);
+    --bs-emphasis-color: var(--ef-text);
+    --bs-secondary-color: var(--ef-muted);
+    --bs-tertiary-bg: var(--ef-surface-2);
+    --bs-secondary-bg: var(--ef-surface-2);
+    --bs-border-color: var(--ef-line);
+    --bs-primary: var(--ef-accent);
+    --bs-primary-rgb: var(--ef-accent-rgb);
+    --bs-link-color: var(--ef-accent);
+    --bs-link-color-rgb: var(--ef-accent-rgb);
+    --bs-link-hover-color: var(--ef-accent-hover);
+    --bs-danger: var(--ef-danger);
+    --bs-form-invalid-color: var(--ef-danger);
+    --bs-form-invalid-border-color: var(--ef-danger);
+    color-scheme: dark;
+}
+
+/* ---------- основа ---------- */
+
 body {
-    background: #f4f6f9;
+    background: var(--ef-bg);
+    color: var(--ef-text);
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    html {
+        scroll-behavior: smooth;
+    }
+}
+
+h1, h2, h3, .h1, .h2, .h3, .h4, .h5 {
+    font-weight: 600;
+    letter-spacing: -.01em;
+}
+
+.ef-muted {
+    color: var(--ef-muted);
+}
+
+.ef-mono {
+    font-family: var(--bs-font-monospace);
+    letter-spacing: .02em;
+}
+
+.table, .ef-num {
+    font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+    outline: 2px solid var(--ef-accent);
+    outline-offset: 2px;
+}
+
+.ef-skip {
+    position: absolute;
+    left: 16px;
+    top: 8px;
+    z-index: 3000;
+    background: var(--ef-surface);
+    padding: 6px 12px;
+    border: 1px solid var(--ef-line);
+}
+
+.ef-page-title {
+    font-size: 1.5rem;
+    margin-bottom: 1.25rem;
+}
+
+/* ---------- кнопки, поля, карточки, таблицы Bootstrap под наши цвета ---------- */
+
+.btn {
+    font-weight: 500;
+    --bs-btn-focus-box-shadow: 0 0 0 3px rgba(var(--ef-accent-rgb), .3);
+}
+
+.btn-lg {
+    --bs-btn-padding-y: .625rem;
+    --bs-btn-padding-x: 1.25rem;
+    --bs-btn-font-size: 1rem;
+    --bs-btn-border-radius: 4px;
+}
+
+.btn-primary {
+    --bs-btn-color: var(--ef-on-accent);
+    --bs-btn-bg: var(--ef-accent);
+    --bs-btn-border-color: var(--ef-accent);
+    --bs-btn-hover-color: var(--ef-on-accent);
+    --bs-btn-hover-bg: var(--ef-accent-hover);
+    --bs-btn-hover-border-color: var(--ef-accent-hover);
+    --bs-btn-active-color: var(--ef-on-accent);
+    --bs-btn-active-bg: var(--ef-accent-hover);
+    --bs-btn-active-border-color: var(--ef-accent-hover);
+    --bs-btn-disabled-color: var(--ef-on-accent);
+    --bs-btn-disabled-bg: var(--ef-accent);
+    --bs-btn-disabled-border-color: var(--ef-accent);
+}
+
+.btn-outline-primary {
+    --bs-btn-color: var(--ef-accent);
+    --bs-btn-border-color: rgba(var(--ef-accent-rgb), .45);
+    --bs-btn-hover-color: var(--ef-on-accent);
+    --bs-btn-hover-bg: var(--ef-accent);
+    --bs-btn-hover-border-color: var(--ef-accent);
+    --bs-btn-active-color: var(--ef-on-accent);
+    --bs-btn-active-bg: var(--ef-accent-hover);
+    --bs-btn-active-border-color: var(--ef-accent-hover);
+}
+
+.btn-outline-secondary {
+    --bs-btn-color: var(--ef-text);
+    --bs-btn-border-color: var(--ef-line);
+    --bs-btn-hover-color: var(--ef-text);
+    --bs-btn-hover-bg: var(--ef-surface-2);
+    --bs-btn-hover-border-color: var(--ef-muted);
+    --bs-btn-active-color: var(--ef-text);
+    --bs-btn-active-bg: var(--ef-surface-2);
+    --bs-btn-active-border-color: var(--ef-muted);
+}
+
+.form-control, .form-select {
+    background-color: var(--ef-surface);
+    border-color: var(--ef-line);
+    color: var(--ef-text);
+}
+
+.form-control::placeholder {
+    color: var(--ef-muted);
+    opacity: .7;
+}
+
+.form-control:focus, .form-select:focus {
+    background-color: var(--ef-surface);
+    border-color: var(--ef-accent);
+    box-shadow: 0 0 0 3px rgba(var(--ef-accent-rgb), .2);
+    color: var(--ef-text);
+}
+
+.form-label {
+    font-size: .875rem;
+    font-weight: 500;
+    margin-bottom: .375rem;
+}
+
+.form-text {
+    color: var(--ef-muted);
+}
+
+.input-validation-error {
+    border-color: var(--ef-danger) !important;
 }
 
 .card {
-    border: 0;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, .08);
+    --bs-card-bg: var(--ef-surface);
+    --bs-card-border-color: var(--ef-line);
+    --bs-card-border-radius: 6px;
+    --bs-card-inner-border-radius: 5px;
+    --bs-card-cap-bg: var(--ef-surface-2);
+    box-shadow: none;
+}
+
+.table {
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--ef-text);
+    --bs-table-border-color: var(--ef-line);
+    --bs-table-hover-bg: var(--ef-surface-2);
+    --bs-table-hover-color: var(--ef-text);
+    --bs-table-striped-bg: var(--ef-surface-2);
 }
 
 .table td, .table th {
     vertical-align: middle;
+}
+
+/* таблица внутри карточки не должна прилипать к её краям */
+.card .table > :not(caption) > * > :first-child {
+    padding-left: 1rem;
+}
+
+.card .table > :not(caption) > * > :last-child {
+    padding-right: 1rem;
+}
+
+.table > thead th, .table-light th {
+    font-size: .8125rem;
+    font-weight: 500;
+    color: var(--ef-muted);
+}
+
+.table-light {
+    --bs-table-bg: var(--ef-surface-2);
+    --bs-table-color: var(--ef-muted);
+    --bs-table-border-color: var(--ef-line);
+}
+
+.alert {
+    --bs-alert-border-radius: 4px;
+}
+
+.badge {
+    font-weight: 500;
+    border-radius: 3px;
+}
+
+/* серые метки статуса и строки-подложки должны темнеть вместе с темой */
+.bg-light {
+    background-color: var(--ef-surface-2) !important;
+}
+
+.bg-light.text-dark, .bg-light .text-dark {
+    color: var(--ef-text) !important;
+}
+
+.bg-white {
+    background-color: var(--ef-surface) !important;
+}
+
+.pagination {
+    --bs-pagination-bg: var(--ef-surface);
+    --bs-pagination-border-color: var(--ef-line);
+    --bs-pagination-color: var(--ef-accent);
+    --bs-pagination-hover-bg: var(--ef-surface-2);
+    --bs-pagination-hover-border-color: var(--ef-line);
+    --bs-pagination-active-bg: var(--ef-accent);
+    --bs-pagination-active-border-color: var(--ef-accent);
+    --bs-pagination-active-color: var(--ef-on-accent);
+    --bs-pagination-disabled-bg: var(--ef-surface);
+    --bs-pagination-disabled-border-color: var(--ef-line);
 }
 
 .sort-link {
@@ -25,16 +305,6 @@ body {
     max-width: 440px;
 }
 
-.hero {
-    background: linear-gradient(135deg, #1f2937, #2563eb);
-    color: #fff;
-    border-radius: .75rem;
-}
-
-.hero .lead {
-    color: rgba(255, 255, 255, .85);
-}
-
 .stat .value {
     font-size: 1.6rem;
     font-weight: 600;
@@ -42,15 +312,626 @@ body {
 }
 
 .stat .label {
-    color: #6b7280;
+    color: var(--ef-muted);
     font-size: .85rem;
 }
 
 tr.line-draft > td {
-    background: #fffbeb;
+    background: rgba(var(--ef-mark-rgb), .12);
 }
 
-/* состояние «загрузка»: полоска сверху, пока сервер готовит страницу */
+/* ---------- шапка ---------- */
+
+.ef-header {
+    background: var(--ef-surface);
+    border-bottom: 1px solid var(--ef-line);
+}
+
+.ef-header .navbar {
+    --bs-navbar-padding-y: .5rem;
+    --bs-navbar-color: var(--ef-muted);
+    --bs-navbar-hover-color: var(--ef-text);
+    --bs-navbar-active-color: var(--ef-text);
+    --bs-navbar-nav-link-padding-x: .75rem;
+    min-height: 56px;
+    /* .navbar обнуляет боковые отступы .container — возвращаю их */
+    padding-left: calc(var(--bs-gutter-x) * .5);
+    padding-right: calc(var(--bs-gutter-x) * .5);
+}
+
+.ef-brand {
+    font-weight: 600;
+    font-size: 1.125rem;
+    color: var(--ef-text);
+    text-decoration: none;
+    margin-right: 1.5rem;
+    white-space: nowrap;
+}
+
+.ef-brand:hover {
+    color: var(--ef-text);
+}
+
+.ef-header .nav-link {
+    font-size: .9375rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.ef-header .nav-link.active {
+    box-shadow: inset 0 -2px 0 var(--ef-accent);
+}
+
+.ef-header .navbar-toggler {
+    border-color: var(--ef-line);
+    color: var(--ef-text);
+    font-size: 1.25rem;
+    padding: .25rem .5rem;
+}
+
+.ef-header-actions {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.ef-user {
+    color: var(--ef-muted);
+    font-size: .875rem;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ef-theme-btn {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid var(--ef-line);
+    color: var(--ef-muted);
+    line-height: 1;
+}
+
+.ef-theme-btn:hover {
+    color: var(--ef-text);
+    background: var(--ef-surface-2);
+}
+
+[data-bs-theme=light] .ef-if-dark,
+[data-bs-theme=dark] .ef-if-light {
+    display: none;
+}
+
+@media (min-width: 992px) {
+    .ef-nav-sep {
+        margin-left: .75rem;
+        padding-left: .75rem;
+        border-left: 1px solid var(--ef-line);
+    }
+}
+
+@media (max-width: 991.98px) {
+    .ef-header .navbar-nav {
+        padding: .5rem 0;
+    }
+
+    .ef-header-actions {
+        padding: .75rem 0 .5rem;
+        border-top: 1px solid var(--ef-line);
+        flex-wrap: wrap;
+    }
+}
+
+/* ---------- первый экран ---------- */
+
+.ef-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 420px);
+    gap: 3rem;
+    align-items: start;
+    padding: 1.5rem 0 3rem;
+    border-bottom: 1px solid var(--ef-line);
+}
+
+.ef-hero h1 {
+    font-size: 2.5rem;
+    line-height: 1.12;
+    letter-spacing: -.02em;
+    max-width: 18ch;
+    margin: 1rem 0 1rem;
+}
+
+.ef-lead {
+    font-size: 1.125rem;
+    color: var(--ef-muted);
+    max-width: 52ch;
+    margin-bottom: 1.75rem;
+}
+
+.ef-hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .75rem;
+}
+
+/* квитанция: проверка статуса ремонта */
+.ef-ticket {
+    background: var(--ef-surface);
+    border: 1px solid var(--ef-line);
+    border-radius: 6px;
+    padding: 1.25rem 1.5rem 1.5rem;
+    scroll-margin-top: 1rem;
+}
+
+.ef-ticket-title {
+    font-size: 1.0625rem;
+    margin-bottom: 1rem;
+}
+
+.ef-ticket-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: .875rem .75rem;
+}
+
+.ef-ticket-form > div:first-child {
+    grid-column: 1 / -1;
+}
+
+.ef-ticket-form > .btn {
+    align-self: start;
+    /* высота подписи поля, чтобы кнопка стояла вровень с полем телефона */
+    margin-top: calc(.875rem * 1.5 + .375rem);
+    height: calc(1.5em + .75rem + 2px);
+}
+
+.ef-ticket-form .form-control {
+    font-size: 1.0625rem;
+}
+
+.ef-ticket-hint {
+    margin: 1rem 0 0;
+    font-size: .875rem;
+    color: var(--ef-muted);
+}
+
+/* линия отрыва между формой и результатом */
+.ef-ticket-result {
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px dashed var(--ef-line);
+}
+
+.ef-ticket-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    font-size: .875rem;
+}
+
+.ef-ticket-device {
+    font-size: 1.0625rem;
+    font-weight: 500;
+    margin: .25rem 0 .5rem;
+}
+
+.ef-ticket-now {
+    margin-bottom: .75rem;
+}
+
+/* ---------- этапы ремонта ---------- */
+
+.ef-stages {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+/* в квитанции этапы идут столбиком: метка и подпись */
+.ef-stages-compact li {
+    position: relative;
+    padding: 0 0 .5rem 1.375rem;
+    font-size: .875rem;
+    color: var(--ef-muted);
+    line-height: 1.3;
+}
+
+.ef-stages-compact li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: .25rem;
+    width: .625rem;
+    height: .625rem;
+    border-radius: 2px;
+    border: 1.5px solid var(--ef-line);
+    background: var(--ef-surface);
+}
+
+.ef-stages-compact li:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    left: calc(.3125rem - .75px);
+    top: 1rem;
+    bottom: .125rem;
+    width: 1.5px;
+    background: var(--ef-line);
+}
+
+.ef-stages-compact li.is-done {
+    color: var(--ef-text);
+}
+
+.ef-stages-compact li.is-done::before {
+    background: var(--ef-accent);
+    border-color: var(--ef-accent);
+}
+
+.ef-stages-compact li.is-done::after {
+    background: var(--ef-accent);
+}
+
+.ef-stages-compact li.is-current {
+    color: var(--ef-text);
+    font-weight: 600;
+}
+
+.ef-stages-compact li.is-current::before {
+    background: var(--ef-mark);
+    border-color: var(--ef-mark);
+    box-shadow: 0 0 0 3px rgba(var(--ef-mark-rgb), .3);
+}
+
+/* «Как мы работаем»: те же этапы в строку, с номером */
+.ef-stages-steps {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 1.25rem;
+    counter-reset: stage;
+}
+
+.ef-stages-steps li {
+    counter-increment: stage;
+    border-top: 2px solid var(--ef-line);
+    padding-top: .75rem;
+}
+
+.ef-stages-steps li::before {
+    content: counter(stage);
+    display: block;
+    font-family: var(--bs-font-monospace);
+    font-size: .8125rem;
+    color: var(--ef-muted);
+    margin-bottom: .25rem;
+}
+
+.ef-stages-steps b {
+    display: block;
+    font-weight: 600;
+    margin-bottom: .25rem;
+}
+
+.ef-stages-steps span {
+    display: block;
+    font-size: .875rem;
+    color: var(--ef-muted);
+    line-height: 1.4;
+}
+
+/* ---------- разделы главной ---------- */
+
+.ef-section {
+    padding-top: 3.5rem;
+    scroll-margin-top: 1rem;
+}
+
+.ef-section-head {
+    margin-bottom: 1.25rem;
+}
+
+.ef-section-head h2 {
+    font-size: 1.625rem;
+    margin-bottom: .375rem;
+}
+
+.ef-section-head p {
+    max-width: 64ch;
+    margin: 0;
+}
+
+/* прайс */
+.ef-price {
+    background: var(--ef-surface);
+    border: 1px solid var(--ef-line);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.ef-tabs {
+    display: none;
+    border-bottom: 1px solid var(--ef-line);
+    overflow-x: auto;
+    padding: 0 .5rem;
+}
+
+.ef-js .ef-tabs {
+    display: flex;
+}
+
+.ef-tab {
+    background: none;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    padding: .875rem 1rem .75rem;
+    font-weight: 500;
+    color: var(--ef-muted);
+    white-space: nowrap;
+}
+
+.ef-tab:hover {
+    color: var(--ef-text);
+}
+
+.ef-tab[aria-selected=true] {
+    color: var(--ef-text);
+    border-bottom-color: var(--ef-accent);
+}
+
+.ef-tab-count {
+    font-size: .8125rem;
+    color: var(--ef-muted);
+    margin-left: .25rem;
+}
+
+.ef-tabpanel-title {
+    font-size: 1rem;
+    padding: 1rem 1rem .25rem;
+    margin: 0;
+}
+
+/* с JS группы переключаются вкладками, без JS видно весь прайс подряд */
+.ef-js .ef-tabpanel:not(.is-active) {
+    display: none;
+}
+
+.ef-js .ef-tabpanel .ef-tabpanel-title {
+    display: none;
+}
+
+.ef-price-common {
+    border-top: 1px solid var(--ef-line);
+    background: var(--ef-surface-2);
+}
+
+.ef-price-common .ef-tabpanel-title {
+    font-size: .875rem;
+    color: var(--ef-muted);
+    font-weight: 500;
+}
+
+.ef-price-common .table {
+    --bs-table-hover-bg: var(--ef-bg);
+}
+
+.ef-price-table {
+    margin: 0;
+}
+
+.ef-price-table th, .ef-price-table td {
+    padding: .625rem 1rem;
+}
+
+.ef-price-table th:first-child, .ef-price-table td:first-child {
+    width: 100%;
+}
+
+.ef-price-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.ef-price-table th {
+    white-space: nowrap;
+}
+
+/* у блока «Для любой техники» заголовки колонок те же, что выше — второй раз не показываю */
+.ef-price-common thead {
+    display: none;
+}
+
+.ef-price-value {
+    font-weight: 500;
+}
+
+.ef-price-table tr.is-picked > td {
+    background: rgba(var(--ef-mark-rgb), .14);
+}
+
+.ef-price-table tr.is-picked > td:first-child {
+    box-shadow: inset 3px 0 0 var(--ef-mark);
+}
+
+.ef-pick {
+    min-width: 6.5rem;
+}
+
+/* заявка */
+.ef-request {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 300px);
+    gap: 2.5rem;
+    align-items: start;
+}
+
+.ef-panel {
+    background: var(--ef-surface);
+    border: 1px solid var(--ef-line);
+    border-radius: 6px;
+    padding: 1.5rem 1.75rem;
+}
+
+.ef-request-form fieldset + fieldset {
+    border-top: 1px solid var(--ef-line);
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+}
+
+.ef-request-form legend {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: .875rem;
+}
+
+.ef-choice {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+}
+
+.ef-choice-item {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .5rem .875rem;
+    border: 1px solid var(--ef-line);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: .9375rem;
+}
+
+.ef-choice-item:hover {
+    border-color: var(--ef-muted);
+}
+
+.ef-choice-item:has(input:checked) {
+    border-color: var(--ef-accent);
+    background: rgba(var(--ef-accent-rgb), .08);
+}
+
+.ef-choice-item input {
+    accent-color: var(--ef-accent);
+    margin: 0;
+}
+
+.ef-choice-item:has(input:focus-visible) {
+    outline: 2px solid var(--ef-accent);
+    outline-offset: 2px;
+}
+
+.ef-request-submit {
+    display: flex;
+    align-items: center;
+    gap: 1rem 1.25rem;
+    flex-wrap: wrap;
+    margin-top: 1.75rem;
+}
+
+.ef-request-submit p {
+    font-size: .8125rem;
+    max-width: 44ch;
+}
+
+.ef-request-aside h3 {
+    font-size: 1rem;
+    margin-bottom: .5rem;
+}
+
+.ef-request-aside p {
+    color: var(--ef-muted);
+    font-size: .9375rem;
+}
+
+.ef-done {
+    display: flex;
+    gap: .75rem;
+    align-items: flex-start;
+    padding: .875rem 1rem;
+    margin-bottom: 1.25rem;
+    border: 1px solid rgba(var(--ef-ok-rgb), .4);
+    border-left: 3px solid var(--ef-ok);
+    border-radius: 4px;
+    background: rgba(var(--ef-ok-rgb), .08);
+}
+
+.ef-done i {
+    color: var(--ef-ok);
+    font-size: 1.25rem;
+    line-height: 1.2;
+}
+
+/* ошибки форм главной */
+.ef-field-error {
+    display: block;
+    color: var(--ef-danger);
+    font-size: .8125rem;
+    margin-top: .25rem;
+}
+
+.ef-field-error:empty {
+    display: none;
+}
+
+.validation-summary-valid {
+    display: none;
+}
+
+.ef-form-error.validation-summary-errors {
+    color: var(--ef-danger);
+    font-size: .875rem;
+    margin-top: 1rem;
+}
+
+.ef-request-form .ef-form-error.validation-summary-errors {
+    margin: 0 0 1.25rem;
+}
+
+.ef-form-error ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+/* ---------- подвал ---------- */
+
+.ef-footer {
+    margin-top: 4rem;
+    background: var(--ef-surface);
+    border-top: 1px solid var(--ef-line);
+    padding: 2rem 0;
+    font-size: .9375rem;
+}
+
+.ef-footer-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 1fr;
+    gap: 1.5rem 2rem;
+}
+
+.ef-footer .ef-brand {
+    display: inline-block;
+    margin-bottom: .25rem;
+}
+
+.ef-footer-title {
+    font-size: .875rem;
+    font-weight: 600;
+    margin-bottom: .375rem;
+}
+
+.ef-phone {
+    color: var(--ef-text);
+    font-weight: 500;
+    text-decoration: none;
+    font-variant-numeric: tabular-nums;
+}
+
+.ef-phone:hover {
+    text-decoration: underline;
+}
+
+/* ---------- состояние «загрузка»: полоска сверху, пока сервер готовит страницу ---------- */
+
 .ef-loading {
     position: fixed;
     top: 0;
@@ -58,7 +939,7 @@ tr.line-draft > td {
     height: 3px;
     width: 100%;
     z-index: 2000;
-    background: linear-gradient(90deg, transparent, #fbbf24, transparent);
+    background: linear-gradient(90deg, transparent, var(--ef-mark), transparent);
     background-size: 50% 100%;
     background-repeat: no-repeat;
     animation: ef-loading 1s linear infinite;
@@ -74,14 +955,135 @@ tr.line-draft > td {
     }
 }
 
-/* на телефоне таблицы прокручиваются внутри карточки, а не всей страницей */
-@media (max-width: 576px) {
-    main.container {
-        padding-left: 12px;
-        padding-right: 12px;
+@media (prefers-reduced-motion: reduce) {
+    .ef-loading {
+        animation: none;
+        background: var(--ef-mark);
+    }
+}
+
+/* ---------- планшет и телефон ---------- */
+
+@media (max-width: 1199.98px) {
+    .ef-stages-steps {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 991.98px) {
+    .ef-hero {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 2rem;
+    }
+
+    .ef-ticket {
+        max-width: 520px;
+    }
+
+    .ef-request {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 1.5rem;
+    }
+}
+
+@media (max-width: 575.98px) {
+    main.container, .ef-header .navbar, .ef-footer .container {
+        padding-left: 16px;
+        padding-right: 16px;
     }
 
     .table {
         font-size: .875rem;
+    }
+
+    .ef-hero h1 {
+        font-size: 1.875rem;
+    }
+
+    .ef-lead {
+        font-size: 1rem;
+    }
+
+    .ef-ticket, .ef-panel {
+        padding: 1.125rem 1rem 1.25rem;
+    }
+
+    .ef-stages-steps {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0;
+    }
+
+    .ef-stages-steps li {
+        display: grid;
+        grid-template-columns: 1.75rem minmax(0, 1fr);
+        border-top: 1px solid var(--ef-line);
+        padding: .625rem 0;
+    }
+
+    .ef-stages-steps li::before {
+        grid-row: span 2;
+        margin: .125rem 0 0;
+    }
+
+    /* прайс на телефоне: название строкой, под ним время, гарантия, цена и кнопка */
+    .ef-price-table thead {
+        display: none;
+    }
+
+    .ef-price-table tr {
+        display: grid;
+        grid-template-columns: auto auto minmax(0, 1fr) auto;
+        align-items: center;
+        column-gap: .75rem;
+        padding: .625rem 1rem;
+        border-bottom: 1px solid var(--ef-line);
+    }
+
+    .ef-price-table tbody tr:last-child {
+        border-bottom: 0;
+    }
+
+    .ef-price-table td {
+        padding: 0;
+        border: 0;
+        background: none;
+        text-align: left !important;
+        font-size: .875rem;
+        color: var(--ef-muted);
+    }
+
+    .ef-price-table td:first-child {
+        grid-column: 1 / -1;
+        width: auto;
+        color: var(--ef-text);
+        font-size: .9375rem;
+        margin-bottom: .375rem;
+    }
+
+    /* «6 мес.» без заголовка колонки непонятно — подписываю */
+    .ef-price-table td[data-label]::before {
+        content: attr(data-label) " ";
+    }
+
+    .ef-price-table td.ef-price-value {
+        color: var(--ef-text);
+    }
+
+    .ef-price-table tr.is-picked {
+        background: rgba(var(--ef-mark-rgb), .14);
+        box-shadow: inset 3px 0 0 var(--ef-mark);
+    }
+
+    .ef-price-table tr.is-picked > td {
+        background: none;
+        box-shadow: none;
+    }
+
+    .ef-pick {
+        min-width: 0;
+    }
+
+    .ef-footer-grid {
+        grid-template-columns: minmax(0, 1fr);
     }
 }

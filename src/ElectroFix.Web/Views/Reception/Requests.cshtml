@@ -1,0 +1,106 @@
+@model PagedResult<RepairRequestDto>
+@{
+    ViewData["Title"] = "Заявки с сайта";
+    var q = (StatusListQuery)ViewBag.Query;
+    var back = Context.Request.Path + Context.Request.QueryString;
+}
+@* заявки без регистрации: перезвонить, завести клиента и записать на приём, потом отметить «Оформлена» *@
+<div class="card">
+    <form method="get" class="row g-2 p-3 border-bottom">
+        <div class="col-12 col-md-5">
+            <input name="search" value="@q.Search" class="form-control" placeholder="Имя, телефон или модель" />
+        </div>
+        <div class="col-7 col-md-3">
+            <select name="status" class="form-select" data-autosubmit aria-label="Статус">
+                <option value="">Все статусы</option>
+                @foreach (var (key, label) in Labels.RequestStatuses)
+                {
+                    <option value="@key" selected="@(key == q.Status)">@label</option>
+                }
+            </select>
+        </div>
+        <input type="hidden" name="sort" value="@q.Sort" />
+        <div class="col-5 col-md-2"><button class="btn btn-primary w-100"><i class="bi bi-search"></i> Найти</button></div>
+    </form>
+    @if (Model.Items.Count == 0)
+    {
+        <div class="p-4 text-center text-muted"><i class="bi bi-inbox fs-2 d-block"></i>Заявок не найдено.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th>@Html.SortHeader("created", "Получена")</th>
+                    <th>@Html.SortHeader("name", "Клиент")</th>
+                    <th>Техника и проблема</th>
+                    <th class="d-none d-lg-table-cell">Как передаст</th>
+                    <th>@Html.SortHeader("status", "Статус")</th>
+                    <th class="text-end">Действия</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var r in Model.Items)
+                {
+                    var open = r.Status is "new" or "processing";
+                    <tr>
+                        <td class="text-nowrap"><span class="text-muted">№ @r.RequestId</span><div class="small">@HtmlHelpers.Time(r.CreatedAt)</div></td>
+                        <td>@r.ClientName
+                            <div class="small"><a href="tel:@r.Phone">@r.Phone</a></div>
+                            @if (r.Email != null)
+                            {
+                                <div class="small text-muted">@r.Email</div>
+                            }
+                        </td>
+                        <td style="min-width: 240px">
+                            <b class="fw-medium">@r.DeviceType @r.DeviceModel</b>
+                            <div class="small">@r.Problem</div>
+                            @if (r.ServiceName != null)
+                            {
+                                <div class="small text-muted">Выбрал в прайсе: @r.ServiceName</div>
+                            }
+                        </td>
+                        <td class="d-none d-lg-table-cell small">
+                            @Labels.Of(Labels.DeliveryMethods, r.DeliveryMethod)
+                            <div class="text-muted">@(r.Branch ?? r.Address)</div>
+                        </td>
+                        <td>
+                            @HtmlHelpers.Status(Labels.RequestStatuses, r.Status)
+                            @if (r.Comment != null)
+                            {
+                                <div class="small text-muted mt-1">@r.Comment</div>
+                            }
+                            @if (r.ProcessedBy != null)
+                            {
+                                <div class="small text-muted">@r.ProcessedBy, @HtmlHelpers.Day(r.ProcessedAt)</div>
+                            }
+                        </td>
+                        <td class="text-end" style="min-width: 260px">
+                            @if (open)
+                            {
+                                <div class="d-flex flex-wrap justify-content-end gap-1 mb-2">
+                                    @if (r.Status == "new")
+                                    {
+                                        <form asp-action="RequestStatus" asp-route-id="@r.RequestId" asp-route-status="processing" asp-route-returnUrl="@back" method="post">
+                                            <button class="btn btn-sm btn-outline-primary">Взять в работу</button>
+                                        </form>
+                                    }
+                                    <a asp-action="NewClient" asp-route-fromRequest="@r.RequestId" class="btn btn-sm btn-outline-secondary">Завести клиента</a>
+                                </div>
+                                @* закрыть заявку: комментарий обязателен только при отказе *@
+                                <form asp-action="RequestStatus" asp-route-id="@r.RequestId" asp-route-returnUrl="@back" method="post" class="d-flex gap-1">
+                                    <input name="comment" class="form-control form-control-sm" placeholder="Комментарий" maxlength="255" aria-label="Комментарий к заявке" />
+                                    <button name="status" value="done" class="btn btn-sm btn-success">Оформлена</button>
+                                    <button name="status" value="rejected" class="btn btn-sm btn-outline-danger">Отклонить</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+    <partial name="_Pager" model="new PagerModel(Model.Page, Model.Size, Model.Total)" />
+</div>

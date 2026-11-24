@@ -1,0 +1,32 @@
+@model (IEnumerable<ServiceDto> Items, int? Picked)
+@* таблица прайса одной группы. «Выбрать» без JS просто открывает главную с выбранной работой в форме *@
+<div class="table-responsive">
+    <table class="table ef-price-table mb-0">
+        <thead>
+        <tr>
+            <th scope="col">Работа</th>
+            <th scope="col" class="text-end">Время</th>
+            <th scope="col" class="text-end">Гарантия</th>
+            <th scope="col" class="text-end">Цена работы</th>
+            <th scope="col"><span class="visually-hidden">Выбор</span></th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var s in Model.Items)
+        {
+            var picked = s.ServiceId == Model.Picked;
+            <tr class="@(picked ? "is-picked" : "")" data-service-row="@s.ServiceId">
+                <td>@s.Name</td>
+                <td class="text-end text-nowrap">@HtmlHelpers.Duration(s.NormHours)</td>
+                <td class="text-end text-nowrap" data-label="гарантия">@(s.WarrantyMonths == 0 ? "—" : s.WarrantyMonths + " мес.")</td>
+                <td class="text-end text-nowrap ef-price-value">от @HtmlHelpers.Price(s.Rate * s.NormHours)</td>
+                <td class="text-end">
+                    <a class="btn btn-sm btn-outline-primary ef-pick" data-pick="@s.ServiceId"
+                       href="@(Url.Action("Index", "Home", new { service = s.ServiceId }))#request"
+                       aria-label="Выбрать для заявки: @s.Name">@(picked ? "Выбрано" : "Выбрать")</a>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>

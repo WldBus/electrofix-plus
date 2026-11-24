@@ -153,8 +153,8 @@
 
         efChart('revenueChart', 'bar',
             @Json.Serialize(Model.RevenueByMonth.Select(x => HtmlHelpers.Month(x.Month))),
-            [{ label: 'Оплаты, ₽', data: @Json.Serialize(Model.RevenueByMonth.Select(x => x.Income)), color: '#16a34a' },
-             { label: 'Возвраты, ₽', data: @Json.Serialize(Model.RevenueByMonth.Select(x => x.Refunds)), color: '#dc2626' }]);
+            [{ label: 'Оплаты, ₽', data: @Json.Serialize(Model.RevenueByMonth.Select(x => x.Income)), color: 'green' },
+             { label: 'Возвраты, ₽', data: @Json.Serialize(Model.RevenueByMonth.Select(x => x.Refunds)), color: 'red' }]);
 
         efChart('newChart', 'line',
             @Json.Serialize(Model.NewByMonth.Select(x => HtmlHelpers.Month(x.Month))),
@@ -164,25 +164,25 @@
 
         efChart('repairChart', 'line',
             @Json.Serialize(Model.RepairTimeByMonth.Select(x => HtmlHelpers.Month(x.Month))),
-            [{ label: 'Дней', data: @Json.Serialize(Model.RepairTimeByMonth.Select(x => x.AvgDays)), color: '#7c3aed', spanGaps: true }],
+            [{ label: 'Дней', data: @Json.Serialize(Model.RepairTimeByMonth.Select(x => x.AvgDays)), color: 'violet', spanGaps: true }],
             { scales: { y: { beginAtZero: true } } });
 
         efChart('workloadChart', 'bar',
             @Json.Serialize(Model.MasterWorkload.Select(x => x.Master)),
             [{ label: 'Заказ-нарядов', data: @Json.Serialize(Model.MasterWorkload.Select(x => x.ActiveOrders)) },
-             { label: 'Нормо-часов', data: @Json.Serialize(Model.MasterWorkload.Select(x => x.NormHours)), color: '#f59e0b' },
-             { label: 'Факт, часов', data: @Json.Serialize(Model.MasterWorkload.Select(x => x.ActualHours)), color: '#0891b2' }],
+             { label: 'Нормо-часов', data: @Json.Serialize(Model.MasterWorkload.Select(x => x.NormHours)), color: 'amber' },
+             { label: 'Факт, часов', data: @Json.Serialize(Model.MasterWorkload.Select(x => x.ActualHours)), color: 'teal' }],
             { indexAxis: 'y' });
 
         efChart('servicesChart', 'bar',
             @Json.Serialize(Model.TopServices.Select(x => x.Name)),
-            [{ label: 'Выручка, ₽', data: @Json.Serialize(Model.TopServices.Select(x => x.Revenue)), color: '#16a34a' },
-             { label: 'Раз выполнено', data: @Json.Serialize(Model.TopServices.Select(x => x.Times)), color: '#2563eb', xAxisID: 'x2' }],
+            [{ label: 'Выручка, ₽', data: @Json.Serialize(Model.TopServices.Select(x => x.Revenue)), color: 'green' },
+             { label: 'Раз выполнено', data: @Json.Serialize(Model.TopServices.Select(x => x.Times)), color: 'blue', xAxisID: 'x2' }],
             { indexAxis: 'y', scales: { x: { position: 'bottom' }, x2: { position: 'top', grid: { display: false }, ticks: { precision: 0 } } } });
 
         efChart('partsChart', 'bar',
             @Json.Serialize(Model.TopParts.Select(x => x.Name)),
-            [{ label: 'Израсходовано', data: @Json.Serialize(Model.TopParts.Select(x => x.Used)), color: '#ea580c' }],
+            [{ label: 'Израсходовано', data: @Json.Serialize(Model.TopParts.Select(x => x.Used)), color: 'orange' }],
             { indexAxis: 'y', scales: { x: { beginAtZero: true } } });
     </script>
 }

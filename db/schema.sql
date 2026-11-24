@@ -1298,3 +1298,133 @@ BEGIN
 END $EF$;
 COMMIT;
 
+START TRANSACTION;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261124063555_RepairRequests') THEN
+    CREATE TABLE repair_requests (
+        request_id integer GENERATED ALWAYS AS IDENTITY,
+        device_type character varying(50) NOT NULL,
+        device_model character varying(100) NOT NULL,
+        problem text NOT NULL,
+        delivery_method character varying(20) NOT NULL,
+        branch character varying(100),
+        address character varying(255),
+        service_id integer,
+        client_name character varying(150) NOT NULL,
+        phone character varying(20) NOT NULL,
+        email character varying(120),
+        status character varying(20) NOT NULL DEFAULT 'new',
+        comment character varying(255),
+        created_at timestamp with time zone NOT NULL DEFAULT (now()),
+        processed_by integer,
+        processed_at timestamp with time zone,
+        CONSTRAINT pk_repair_requests PRIMARY KEY (request_id),
+        CONSTRAINT ck_rr_delivery CHECK (delivery_method IN ('self', 'courier', 'master_visit')),
+        CONSTRAINT ck_rr_phone CHECK (phone ~ '^\+7[0-9]{10}$'),
+        CONSTRAINT ck_rr_place CHECK ((delivery_method = 'self' AND branch IS NOT NULL) OR (delivery_method <> 'self' AND address IS NOT NULL)),
+        CONSTRAINT ck_rr_problem CHECK (length(problem) BETWEEN 5 AND 1000),
+        CONSTRAINT ck_rr_processed CHECK (status IN ('new', 'processing') OR (processed_by IS NOT NULL AND processed_at IS NOT NULL)),
+        CONSTRAINT ck_rr_status CHECK (status IN ('new', 'processing', 'done', 'rejected')),
+        CONSTRAINT fk_rr_processed_by FOREIGN KEY (processed_by) REFERENCES users (user_id) ON DELETE SET NULL,
+        CONSTRAINT fk_rr_service FOREIGN KEY (service_id) REFERENCES services (service_id) ON DELETE SET NULL
+    );
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261124063555_RepairRequests') THEN
+    CREATE INDEX ix_repair_requests_processed_by ON repair_requests (processed_by);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261124063555_RepairRequests') THEN
+    CREATE INDEX ix_repair_requests_service_id ON repair_requests (service_id);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261124063555_RepairRequests') THEN
+    CREATE INDEX ix_repair_requests_status_created_at ON repair_requests (status, created_at);
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261124063555_RepairRequests') THEN
+
+    ALTER TABLE repair_requests ENABLE ROW LEVEL SECURITY;
+
+
+
+    CREATE TRIGGER audit_repair_requests AFTER INSERT OR UPDATE OR DELETE ON repair_requests
+
+        FOR EACH ROW EXECUTE FUNCTION trg_audit('request_id');
+
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261124063555_RepairRequests') THEN
+
+    DO $$
+
+    BEGIN
+
+        IF EXISTS (SELECT 1 FROM services) THEN
+
+            UPDATE services SET name = 'Замена подшипников барабана стиральной машины', category = 'Крупная бытовая техника' WHERE name = 'Замена подшипников барабана' AND category = 'Стиральные машины';
+            UPDATE services SET name = 'Замена ТЭНа стиральной машины', category = 'Крупная бытовая техника' WHERE name = 'Замена ТЭНа' AND category = 'Стиральные машины';
+            UPDATE services SET name = 'Замена компрессора холодильника', category = 'Крупная бытовая техника' WHERE name = 'Замена компрессора' AND category = 'Холодильники';
+            UPDATE services SET name = 'Заправка холодильника фреоном', category = 'Крупная бытовая техника' WHERE name = 'Заправка фреоном' AND category = 'Холодильники';
+            UPDATE services SET name = 'Замена LED-подсветки телевизора', category = 'Крупная бытовая техника' WHERE name = 'Замена LED-подсветки матрицы' AND category = 'Телевизоры';
+            UPDATE services SET name = 'Чистка системы охлаждения, замена пасты', category = 'Ноутбуки и ПК' WHERE name = 'Чистка системы охлаждения, замена пасты' AND category = 'Ноутбуки';
+            UPDATE services SET name = 'Ремонт цепи питания материнской платы', category = 'Ноутбуки и ПК' WHERE name = 'Ремонт цепи питания материнской платы' AND category = 'Ноутбуки';
+
+            INSERT INTO services (name, category, norm_hours, rate, warranty_months) VALUES
+
+            ('Замена разъёма зарядки',                              'Смартфоны',               0.75, 1600.00, 6),
+            ('Замена задней крышки',                                'Смартфоны',               0.50, 1600.00, 3),
+            ('Замена основной камеры',                              'Смартфоны',               0.75, 1600.00, 3),
+            ('Восстановление после попадания влаги',                'Смартфоны',               2.00, 1600.00, 1),
+            ('Прошивка и восстановление ПО',                        'Смартфоны',               0.50, 1600.00, 1),
+            ('Замена матрицы ноутбука',                             'Ноутбуки и ПК',           1.00, 1400.00, 6),
+            ('Замена клавиатуры ноутбука',                          'Ноутбуки и ПК',           1.00, 1400.00, 3),
+            ('Установка SSD и перенос данных',                      'Ноутбуки и ПК',           1.00, 1400.00, 3),
+            ('Замена блока питания ПК',                             'Ноутбуки и ПК',           0.50, 1400.00, 6),
+            ('Сборка и настройка ПК',                               'Ноутбуки и ПК',           2.00, 1400.00, 3),
+            ('Замена сливного насоса стиральной машины',            'Крупная бытовая техника', 1.00, 1800.00, 6),
+            ('Замена циркуляционного насоса посудомоечной машины',  'Крупная бытовая техника', 1.50, 1800.00, 6),
+            ('Замена уплотнителя двери холодильника',               'Крупная бытовая техника', 1.00, 2000.00, 3),
+            ('Замена конфорки электроплиты',                        'Крупная бытовая техника', 1.00, 1800.00, 6),
+            ('Замена магнетрона микроволновой печи',                'Мелкая бытовая техника',  1.00, 1200.00, 6),
+            ('Замена двигателя пылесоса',                           'Мелкая бытовая техника',  1.00, 1200.00, 6),
+            ('Чистка кофемашины от накипи, замена уплотнителей',    'Мелкая бытовая техника',  1.50, 1200.00, 3),
+            ('Замена ТЭНа электрочайника',                          'Мелкая бытовая техника',  0.50, 1200.00, 3),
+            ('Замена шнура питания',                                'Мелкая бытовая техника',  0.50, 1200.00, 3),
+            ('Ремонт фена или утюга',                               'Мелкая бытовая техника',  0.75, 1200.00, 3)
+
+            ON CONFLICT (name, category) DO NOTHING;
+
+        END IF;
+
+    END $$;
+
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "migration_id" = '20261124063555_RepairRequests') THEN
+    INSERT INTO "__EFMigrationsHistory" (migration_id, product_version)
+    VALUES ('20261124063555_RepairRequests', '10.0.15');
+    END IF;
+END $EF$;
+COMMIT;
+

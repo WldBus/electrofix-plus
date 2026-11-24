@@ -11,6 +11,26 @@ namespace ElectroFix.Web.Controllers;
 [Authorize(Roles = RoleCodes.Receptionist)]
 public class ReceptionController(ApiClient api) : SiteController
 {
+    // ---------- заявки с сайта ----------
+
+    // по умолчанию показываю необработанные: новые и те, что в работе
+    public async Task<IActionResult> Requests([FromQuery] StatusListQuery q)
+    {
+        ViewBag.Query = q;
+        var all = await api.GetAsync<PagedResult<RepairRequestDto>>("/api/requests" + ListUrl.ToApiQuery(q));
+        return View(all);
+    }
+
+    // взять в работу / оформлена / отклонена (для отклонения нужен комментарий — проверяет Api)
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RequestStatus(int id, string status, string? comment, string? returnUrl)
+    {
+        await RunAndNotifyAsync(() => api.PostAsync($"/api/requests/{id}/status", new RequestStatusChange { Status = status, Comment = comment }),
+            $"Заявка № {id}: «{Labels.Of(Labels.RequestStatuses, status)}»");
+        return Url.IsLocalUrl(returnUrl) ? Redirect(returnUrl) : RedirectToAction(nameof(Requests));
+    }
+
     // ---------- записи ----------
 
     public async Task<IActionResult> Index([FromQuery] StatusListQuery q)
@@ -55,7 +75,17 @@ public class ReceptionController(ApiClient api) : SiteController
         return View(await api.GetAsync<PagedResult<ClientDto>>("/api/clients" + ListUrl.ToApiQuery(q)));
     }
 
-    public IActionResult NewClient() => View(new ClientSaveRequest());
+    // fromRequest — заявка с сайта: подставляю из неё имя, телефон, email и адрес
+    public async Task<IActionResult> NewClient(int? fromRequest)
+    {
+        if (fromRequest is not { } id)
+        {
+            return View(new ClientSaveRequest());
+        }
+        var r = await api.GetAsync<RepairRequestDto>($"/api/requests/{id}");
+        ViewData["FromRequest"] = r;
+        return View(new ClientSaveRequest { DisplayName = r.ClientName, Phone = r.Phone, Email = r.Email, Address = r.Address });
+    }
 
     [HttpPost]
     [ValidateAntiForgeryToken]

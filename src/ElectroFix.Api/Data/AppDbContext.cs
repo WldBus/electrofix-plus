@@ -25,6 +25,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<StockMove> StockMoves => Set<StockMove>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<RepairRequest> RepairRequests => Set<RepairRequest>();
 
     // представления
     public DbSet<WorkOrderView> WorkOrdersView => Set<WorkOrderView>();
@@ -283,6 +284,41 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             // удалили пользователя навсегда — его токены уходят вместе с ним
             e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId)
                 .HasConstraintName("fk_refresh_tokens_user").OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<RepairRequest>(e =>
+        {
+            e.ToTable("repair_requests", t =>
+            {
+                t.HasCheckConstraint("ck_rr_delivery", "delivery_method IN ('self', 'courier', 'master_visit')");
+                t.HasCheckConstraint("ck_rr_status", "status IN ('new', 'processing', 'done', 'rejected')");
+                t.HasCheckConstraint("ck_rr_phone", "phone ~ '^\\+7[0-9]{10}$'");
+                t.HasCheckConstraint("ck_rr_problem", "length(problem) BETWEEN 5 AND 1000");
+                // принесёт сам — нужен филиал, курьер и выезд мастера — нужен адрес
+                t.HasCheckConstraint("ck_rr_place",
+                    "(delivery_method = 'self' AND branch IS NOT NULL) OR (delivery_method <> 'self' AND address IS NOT NULL)");
+                // обработанная заявка помнит, кто и когда её закрыл
+                t.HasCheckConstraint("ck_rr_processed",
+                    "status IN ('new', 'processing') OR (processed_by IS NOT NULL AND processed_at IS NOT NULL)");
+            });
+            e.HasKey(x => x.RequestId);
+            e.Property(x => x.RequestId).UseIdentityAlwaysColumn();
+            e.Property(x => x.DeviceType).HasMaxLength(50);
+            e.Property(x => x.DeviceModel).HasMaxLength(100);
+            e.Property(x => x.DeliveryMethod).HasMaxLength(20);
+            e.Property(x => x.Branch).HasMaxLength(100);
+            e.Property(x => x.Address).HasMaxLength(255);
+            e.Property(x => x.ClientName).HasMaxLength(150);
+            e.Property(x => x.Phone).HasMaxLength(20);
+            e.Property(x => x.Email).HasMaxLength(120);
+            e.Property(x => x.Status).HasMaxLength(20).HasDefaultValue("new");
+            e.Property(x => x.Comment).HasMaxLength(255);
+            e.Property(x => x.CreatedAt).HasDefaultValueSql("now()");
+            e.HasIndex(x => new { x.Status, x.CreatedAt }, "ix_rr_status");
+            e.HasOne(x => x.Service).WithMany().HasForeignKey(x => x.ServiceId)
+                .HasConstraintName("fk_rr_service").OnDelete(DeleteBehavior.SetNull);
+            e.HasOne(x => x.Processor).WithMany().HasForeignKey(x => x.ProcessedBy)
+                .HasConstraintName("fk_rr_processed_by").OnDelete(DeleteBehavior.SetNull);
         });
 
         b.Entity<StockMove>(e =>

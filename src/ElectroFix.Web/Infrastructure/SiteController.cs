@@ -23,7 +23,8 @@ public abstract class SiteController : Controller
             return true;
         }
         catch (ApiException ex) when (ex.Status is HttpStatusCode.UnprocessableEntity or HttpStatusCode.Conflict
-                                          or HttpStatusCode.BadRequest or HttpStatusCode.NotFound)
+                                          or HttpStatusCode.BadRequest or HttpStatusCode.NotFound
+                                          or HttpStatusCode.TooManyRequests)
         {
             if (ex.Error.Errors is { Count: > 0 } errors)
             {

@@ -1,15 +1,17 @@
 @model string
 @* цветная метка статуса заказ-наряда или счёта *@
 @{
-    var css = Model switch
+    // спокойные метки: светлый фон и тёмный текст того же цвета (в тёмной теме Bootstrap сам их приглушает)
+    var tone = Model switch
     {
-        "closed" or "paid" => "bg-success",
-        "cancelled" => "bg-secondary",
-        "ready" or "partially_paid" => "bg-info text-dark",
-        "unpaid" => "bg-warning text-dark",
-        "in_progress" or "assigned" or "pdi" => "bg-primary",
-        _ => "bg-light text-dark border",
+        "closed" or "paid" => "success",
+        "cancelled" => "secondary",
+        "ready" or "partially_paid" => "info",
+        "unpaid" or "estimate" => "warning",
+        "in_progress" or "assigned" or "pdi" => "primary",
+        _ => "secondary",
     };
+    var css = $"bg-{tone}-subtle text-{tone}-emphasis border border-{tone}-subtle";
     var label = Labels.WorkOrderStatuses.ContainsKey(Model)
         ? Labels.Of(Labels.WorkOrderStatuses, Model)
         : Labels.Of(Labels.InvoiceStatuses, Model);

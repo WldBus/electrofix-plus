@@ -43,6 +43,16 @@ public class DevicesController(ApiClient api) : AdminController
     }
 }
 
+// заявки с сайта: админ только смотрит, обрабатывает их приёмщик на сайте
+public class RequestsController(ApiClient api) : AdminController
+{
+    public async Task<IActionResult> Index([FromQuery] StatusListQuery q)
+    {
+        ViewBag.Query = q;
+        return View(await api.GetAsync<PagedResult<RepairRequestDto>>("/api/requests" + ListUrl.ToApiQuery(q)));
+    }
+}
+
 public class CheckinsController(ApiClient api) : AdminController
 {
     public async Task<IActionResult> Index([FromQuery] StatusListQuery q)

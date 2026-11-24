@@ -42,6 +42,13 @@ public static class HtmlHelpers
 
     public static string Num(decimal value) => value.ToString("0.##", Ru);
 
+    // цена в прайсе на сайте: без копеек, «1 200 ₽»
+    public static string Price(decimal value) => value.ToString("N0", Ru) + " ₽";
+
+    // норма времени работы: меньше часа — в минутах, чтобы не писать «0,75 ч»
+    public static string Duration(decimal hours) =>
+        hours < 1 ? $"{hours * 60:0} мин" : $"{Num(hours)} ч";
+
     // цветная метка статуса: словарь подписей передаю, потому что «cancelled» есть и у записи, и у заказа
     public static IHtmlContent Status(Dictionary<string, string> labels, string? code)
     {
@@ -49,15 +56,17 @@ public static class HtmlHelpers
         {
             return new HtmlString("–");
         }
-        var css = code switch
+        // спокойные метки: светлый фон и текст того же тона, в тёмной теме Bootstrap их сам приглушает
+        var tone = code switch
         {
-            "closed" or "paid" or "approved" or "checked_in" => "bg-success",
-            "cancelled" or "rejected" or "no_show" => "bg-secondary",
-            "ready" or "partially_paid" or "confirmed" => "bg-info text-dark",
-            "unpaid" or "pending" or "estimate" => "bg-warning text-dark",
-            "in_progress" or "assigned" or "pdi" => "bg-primary",
-            _ => "bg-light text-dark border",
+            "closed" or "paid" or "approved" or "checked_in" or "done" => "success",
+            "cancelled" or "rejected" or "no_show" => "secondary",
+            "ready" or "partially_paid" or "confirmed" => "info",
+            "unpaid" or "pending" or "estimate" or "new" => "warning",
+            "in_progress" or "assigned" or "pdi" or "processing" => "primary",
+            _ => "secondary",
         };
+        var css = $"bg-{tone}-subtle text-{tone}-emphasis border border-{tone}-subtle";
         return new HtmlString($"<span class=\"badge {css}\">{HtmlEncoder.Default.Encode(Labels.Of(labels, code))}</span>");
     }
 

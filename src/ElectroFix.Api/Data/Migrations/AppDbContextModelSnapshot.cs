@@ -691,6 +691,124 @@ namespace ElectroFix.Api.Data.Migrations
                     b.ToTable("refresh_tokens", (string)null);
                 });
 
+            modelBuilder.Entity("ElectroFix.Api.Entities.RepairRequest", b =>
+                {
+                    b.Property<int>("RequestId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("request_id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<int>("RequestId"));
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("address");
+
+                    b.Property<string>("Branch")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("branch");
+
+                    b.Property<string>("ClientName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("client_name");
+
+                    b.Property<string>("Comment")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("comment");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<string>("DeliveryMethod")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("delivery_method");
+
+                    b.Property<string>("DeviceModel")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("device_model");
+
+                    b.Property<string>("DeviceType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("device_type");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("email");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("phone");
+
+                    b.Property<string>("Problem")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("problem");
+
+                    b.Property<DateTime?>("ProcessedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("processed_at");
+
+                    b.Property<int?>("ProcessedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("processed_by");
+
+                    b.Property<int?>("ServiceId")
+                        .HasColumnType("integer")
+                        .HasColumnName("service_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("new")
+                        .HasColumnName("status");
+
+                    b.HasKey("RequestId")
+                        .HasName("pk_repair_requests");
+
+                    b.HasIndex("ProcessedBy")
+                        .HasDatabaseName("ix_repair_requests_processed_by");
+
+                    b.HasIndex("ServiceId")
+                        .HasDatabaseName("ix_repair_requests_service_id");
+
+                    b.HasIndex(new[] { "Status", "CreatedAt" }, "ix_rr_status")
+                        .HasDatabaseName("ix_repair_requests_status_created_at");
+
+                    b.ToTable("repair_requests", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_rr_delivery", "delivery_method IN ('self', 'courier', 'master_visit')");
+
+                            t.HasCheckConstraint("ck_rr_phone", "phone ~ '^\\+7[0-9]{10}$'");
+
+                            t.HasCheckConstraint("ck_rr_place", "(delivery_method = 'self' AND branch IS NOT NULL) OR (delivery_method <> 'self' AND address IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_rr_problem", "length(problem) BETWEEN 5 AND 1000");
+
+                            t.HasCheckConstraint("ck_rr_processed", "status IN ('new', 'processing') OR (processed_by IS NOT NULL AND processed_at IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_rr_status", "status IN ('new', 'processing', 'done', 'rejected')");
+                        });
+                });
+
             modelBuilder.Entity("ElectroFix.Api.Entities.Role", b =>
                 {
                     b.Property<short>("RoleId")
@@ -1305,6 +1423,25 @@ namespace ElectroFix.Api.Data.Migrations
                         .HasConstraintName("fk_refresh_tokens_user");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ElectroFix.Api.Entities.RepairRequest", b =>
+                {
+                    b.HasOne("ElectroFix.Api.Entities.User", "Processor")
+                        .WithMany()
+                        .HasForeignKey("ProcessedBy")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_rr_processed_by");
+
+                    b.HasOne("ElectroFix.Api.Entities.Service", "Service")
+                        .WithMany()
+                        .HasForeignKey("ServiceId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_rr_service");
+
+                    b.Navigation("Processor");
+
+                    b.Navigation("Service");
                 });
 
             modelBuilder.Entity("ElectroFix.Api.Entities.StockMove", b =>

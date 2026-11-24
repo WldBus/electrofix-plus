@@ -45,7 +45,7 @@
         @foreach (var s in Model.Services)
         {
             <tr>
-                <td>@s.ServiceName @if (s.IsEmergency) { <span class="badge bg-danger">срочно</span> }</td>
+                <td>@s.ServiceName @if (s.IsEmergency) { <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle">срочно</span> }</td>
                 <td class="text-end">@HtmlHelpers.Num(s.NormHours)</td>
                 <td class="text-end">@HtmlHelpers.Num(s.ActualTime)</td>
                 <td class="text-end">@HtmlHelpers.Money(s.Rate)</td>

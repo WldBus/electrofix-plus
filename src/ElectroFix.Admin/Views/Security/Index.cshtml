@@ -75,10 +75,10 @@
     <script>
         efChart('securityChart', 'line',
             @Json.Serialize(days.Select(d => d.Day.ToString("dd.MM"))),
-            [{ label: 'Входы', data: @Json.Serialize(days.Select(d => d.Logins)), color: '#16a34a' },
-             { label: 'Неудачные входы', data: @Json.Serialize(days.Select(d => d.Failed)), color: '#f59e0b' },
-             { label: 'Без прав (401/403)', data: @Json.Serialize(days.Select(d => d.Denied)), color: '#dc2626' },
-             { label: 'Нет такого адреса (404)', data: @Json.Serialize(days.Select(d => d.NotFound)), color: '#64748b' }],
+            [{ label: 'Входы', data: @Json.Serialize(days.Select(d => d.Logins)), color: 'green' },
+             { label: 'Неудачные входы', data: @Json.Serialize(days.Select(d => d.Failed)), color: 'amber' },
+             { label: 'Без прав (401/403)', data: @Json.Serialize(days.Select(d => d.Denied)), color: 'red' },
+             { label: 'Нет такого адреса (404)', data: @Json.Serialize(days.Select(d => d.NotFound)), color: 'slate' }],
             { scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } });
     </script>
 }

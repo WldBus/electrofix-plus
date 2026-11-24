@@ -1,6 +1,15 @@
 @model ClientSaveRequest
 @{
     ViewData["Title"] = "Новый клиент";
+    var from = ViewData["FromRequest"] as RepairRequestDto;
+}
+@if (from != null)
+{
+    @* клиент из заявки с сайта: напоминаю, что за техника, чтобы потом записать на приём *@
+    <div class="alert alert-light border" style="max-width: 720px">
+        По заявке № @from.RequestId: <b>@from.DeviceType @from.DeviceModel</b> — @from.Problem
+        <div class="small text-muted mt-1">@Labels.Of(Labels.DeliveryMethods, from.DeliveryMethod)@(from.Branch != null ? ", " + from.Branch : "")@(from.ServiceName != null ? ". Работа из прайса: " + from.ServiceName : "")</div>
+    </div>
 }
 <div class="card p-3 p-md-4" style="max-width: 720px">
     <form asp-action="NewClient" method="post">

@@ -1,0 +1,62 @@
+@model PagedResult<RepairRequestDto>
+@{
+    ViewData["Title"] = "Заявки с сайта";
+    ViewData["ReadOnly"] = true;
+    var q = (StatusListQuery)ViewBag.Query;
+}
+<form method="get" class="d-flex flex-wrap gap-2 mb-3">
+    <input name="search" value="@q.Search" class="form-control" placeholder="Имя, телефон или модель" style="width: 260px" />
+    <select name="status" class="form-select w-auto" onchange="this.form.submit()" aria-label="Статус">
+        <option value="">Все статусы</option>
+        @foreach (var (key, label) in Labels.RequestStatuses)
+        {
+            <option value="@key" selected="@(q.Status == key)">@label</option>
+        }
+    </select>
+    <button class="btn btn-outline-secondary" aria-label="Найти"><i class="bi bi-search"></i></button>
+</form>
+<div class="card">
+    <div class="table-responsive">
+    <table class="table table-hover mb-0">
+        <thead>
+        <tr>
+            <th>@Html.SortHeader("created", "Получена")</th>
+            <th>@Html.SortHeader("name", "Клиент")</th>
+            <th>Техника и проблема</th>
+            <th>Как передаст</th>
+            <th>@Html.SortHeader("status", "Статус")</th>
+            <th>Обработал</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var r in Model.Items)
+        {
+            var tone = r.Status switch { "new" => "warning", "processing" => "primary", "done" => "success", _ => "secondary" };
+            <tr>
+                <td class="text-nowrap">№ @r.RequestId<div class="small text-body-secondary">@HtmlHelpers.Time(r.CreatedAt)</div></td>
+                <td>@r.ClientName<div class="small text-body-secondary">@r.Phone</div></td>
+                <td>@r.DeviceType @r.DeviceModel<div class="small text-body-secondary">@r.Problem</div>
+                    @if (r.ServiceName != null)
+                    {
+                        <div class="small text-body-secondary">Из прайса: @r.ServiceName</div>
+                    }
+                </td>
+                <td class="small">@Labels.Of(Labels.DeliveryMethods, r.DeliveryMethod)<div class="text-body-secondary">@(r.Branch ?? r.Address)</div></td>
+                <td><span class="badge bg-@tone-subtle text-@tone-emphasis border border-@tone-subtle">@Labels.Of(Labels.RequestStatuses, r.Status)</span>
+                    @if (r.Comment != null)
+                    {
+                        <div class="small text-body-secondary mt-1">@r.Comment</div>
+                    }
+                </td>
+                <td class="small">@(r.ProcessedBy ?? "–")<div class="text-body-secondary">@(r.ProcessedAt == null ? "" : HtmlHelpers.Day(r.ProcessedAt))</div></td>
+            </tr>
+        }
+        @if (Model.Items.Count == 0)
+        {
+            <tr><td colspan="6" class="text-center text-body-secondary py-4">Заявок нет</td></tr>
+        }
+        </tbody>
+    </table>
+    </div>
+    <partial name="_Pager" model="new PagerModel(Model.Page, Model.Size, Model.Total)" />
+</div>

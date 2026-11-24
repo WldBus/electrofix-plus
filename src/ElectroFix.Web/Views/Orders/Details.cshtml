@@ -45,7 +45,7 @@ else if (hint != "")
                     @if (Model.CanAct && Model.HasDraft)
                     {
                         <form asp-action="SendEstimate" asp-route-id="@h.WorkOrderId" method="post">
-                            <button class="btn btn-warning"><i class="bi bi-send"></i> Отправить смету клиенту</button>
+                            <button class="btn btn-primary"><i class="bi bi-send"></i> Отправить смету клиенту</button>
                         </form>
                     }
                     @foreach (var to in moves)

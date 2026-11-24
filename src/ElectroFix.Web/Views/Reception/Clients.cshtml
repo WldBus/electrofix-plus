@@ -46,7 +46,7 @@
                         <td class="text-nowrap">@c.Phone</td>
                         <td class="d-none d-md-table-cell">@(c.Email ?? "–")</td>
                         <td class="d-none d-sm-table-cell text-end">@c.DevicesCount</td>
-                        <td class="text-end"><a asp-action="Book" asp-route-clientId="@c.ClientId" class="btn btn-sm btn-warning text-nowrap"><i class="bi bi-calendar-plus"></i> Записать</a></td>
+                        <td class="text-end"><a asp-action="Book" asp-route-clientId="@c.ClientId" class="btn btn-sm btn-primary text-nowrap"><i class="bi bi-calendar-plus"></i> Записать</a></td>
                     </tr>
                 }
                 </tbody>
