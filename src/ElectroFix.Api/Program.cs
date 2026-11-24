@@ -31,8 +31,15 @@ builder.Services.AddSingleton<AppUserInterceptor>();
 var connectionString = builder.Configuration.GetConnectionString("Default");
 if (!string.IsNullOrEmpty(connectionString))
 {
-    // Kerberos (GSS) мне не нужен, а без этого Npgsql в Docker пишет в лог ошибку про libgssapi
-    connectionString = new NpgsqlConnectionStringBuilder(connectionString) { GssEncryptionMode = GssEncryptionMode.Disable }.ConnectionString;
+    // Kerberos (GSS) мне не нужен, а без этого Npgsql в Docker пишет в лог ошибку про libgssapi.
+    // Пул ограничиваю: нагрузочный тест показал, что при сотне одновременных запросов без лимита
+    // кончаются соединения PostgreSQL (53300), а у пулера Supabase на бесплатном тарифе их ещё меньше.
+    // С лимитом лишние запросы просто ждут свободное соединение
+    connectionString = new NpgsqlConnectionStringBuilder(connectionString)
+    {
+        GssEncryptionMode = GssEncryptionMode.Disable,
+        MaxPoolSize = 10,
+    }.ConnectionString;
 }
 builder.Services.AddDbContext<AppDbContext>((sp, o) => o
     .UseNpgsql(connectionString)

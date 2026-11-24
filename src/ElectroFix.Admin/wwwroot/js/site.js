@@ -45,6 +45,8 @@ function efChart(id, type, labels, datasets, options) {
             d.tension = 0.3;
             if (type === 'line') {
                 d.pointRadius = 2;
+                // monotone не даёт сглаженной линии уходить ниже нуля между точками
+                d.cubicInterpolationMode = 'monotone';
             } else {
                 d.borderRadius = 2;
             }

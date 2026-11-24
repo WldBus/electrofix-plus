@@ -76,9 +76,9 @@ ElectroFix.sln
 
 ### База данных
 
-Таблиц 16:
+Таблиц 17:
 - `roles`, `users`, `refresh_tokens`;
-- `clients`, `devices`, `checkins`;
+- `clients`, `devices`, `checkins`, `repair_requests` (заявки с сайта);
 - `work_orders`, `services`, `parts`, `order_services`, `order_parts`;
 - `invoices`, `payments`, `warranty_cases`, `stock_moves`;
 - `audit_log`.

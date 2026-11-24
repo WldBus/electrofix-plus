@@ -98,7 +98,7 @@ tabs.forEach((tab, i) => {
 });
 
 // «Выбрать» в прайсе: ставлю работу в форму заявки без перезагрузки страницы
-const serviceSelect = document.getElementById('requestService');
+const serviceSelect = document.getElementById('Request_ServiceId');
 
 function efMarkPicked(id) {
     document.querySelectorAll('[data-service-row]').forEach(row => {

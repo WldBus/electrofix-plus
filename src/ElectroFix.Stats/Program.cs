@@ -26,9 +26,11 @@ if (string.IsNullOrEmpty(connectionString))
 {
     throw new InvalidOperationException("Не задан ConnectionStrings:Stats. См. README, раздел про секреты");
 }
-// GSS (Kerberos) выключаю, как и в Api: иначе в Docker в логе ошибка про libgssapi
+// GSS (Kerberos) выключаю, как и в Api: иначе в Docker в логе ошибка про libgssapi.
+// Пул маленький: на нагрузочном тесте 50 одновременных сводок без лимита съели все соединения
+// PostgreSQL и часть запросов упала с 53300. Теперь лишние ждут очереди, а не падают
 builder.Services.AddSingleton(NpgsqlDataSource.Create(
-    new NpgsqlConnectionStringBuilder(connectionString) { GssEncryptionMode = GssEncryptionMode.Disable }));
+    new NpgsqlConnectionStringBuilder(connectionString) { GssEncryptionMode = GssEncryptionMode.Disable, MaxPoolSize = 5 }));
 builder.Services.AddScoped<StatsRepository>();
 
 // токен выдаёт основной Api, тут я его только проверяю тем же ключом Jwt__Key

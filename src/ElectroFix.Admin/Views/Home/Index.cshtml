@@ -98,7 +98,7 @@
     <div class="col-lg-6">
         <div class="card h-100">
             <h3 class="h6 p-3 mb-0">Запчасти ниже минимального запаса</h3>
-            <table class="table table-sm mb-0">
+            <div class="table-responsive"><table class="table table-sm mb-0">
                 <thead><tr><th>Артикул</th><th>Название</th><th class="text-end">Есть</th><th class="text-end">Мин.</th><th class="text-end">Дозаказать</th></tr></thead>
                 <tbody>
                 @foreach (var p in Model.PartsBelowMin)
@@ -116,7 +116,7 @@
                     <tr><td colspan="5" class="text-center text-muted">Всего хватает</td></tr>
                 }
                 </tbody>
-            </table>
+            </table></div>
         </div>
     </div>
 </div>
@@ -126,7 +126,7 @@
         <h2 class="h6 mb-0">Последние заказ-наряды</h2>
         <a asp-controller="WorkOrders" asp-action="Index" class="small">Все заказ-наряды →</a>
     </div>
-    <table class="table table-hover mb-0">
+    <div class="table-responsive"><table class="table table-hover mb-0">
         <thead><tr><th>Номер</th><th>Клиент</th><th>Устройство</th><th>Статус</th><th class="text-end">Сумма</th><th>Открыт</th></tr></thead>
         <tbody>
         @foreach (var w in recent.Items)
@@ -141,7 +141,7 @@
             </tr>
         }
         </tbody>
-    </table>
+    </table></div>
 </div>
 
 @section Scripts {
